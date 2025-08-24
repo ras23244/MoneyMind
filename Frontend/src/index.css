@@ -1,0 +1,74 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+
+
+@layer base {
+  :root {
+    /* Finomic Dark Theme - Exact Colors */
+    --background: 240 6% 10%;
+    /* Very dark background */
+    --foreground: 0 0% 95%;
+
+    /* Card system - Dark cards */
+    --card: 240 6% 10%;
+    --card-foreground: 0 0% 95%;
+    --card-dark: 240 10% 8%;
+    /* Even darker cards */
+    --card-elevated: 240 8% 12%;
+
+    /* Balance card specific */
+    --balance-card: 240 15% 6%;
+    /* Almost black */
+    --balance-text: 0 0% 40%;
+    /* Muted text */
+    --balance-amount: 0 0% 95%;
+    /* Bright white amount */
+
+    /* Surface variants */
+    --popover: 240 10% 8%;
+    --popover-foreground: 0 0% 95%;
+
+    /* Accent colors */
+    --primary: 0 0% 95%;
+    /* White primary */
+    --primary-foreground: 240 15% 6%;
+    --primary-glow: 0 0% 90%;
+
+    --secondary: 240 5% 20%;
+    --secondary-foreground: 0 0% 90%;
+
+    /* Muted elements */
+    --muted: 240 5% 15%;
+    --muted-foreground: 0 0% 50%;
+
+    /* Accent highlights */
+    --accent: 240 5% 15%;
+    --accent-foreground: 0 0% 90%;
+
+    /* Interactive elements */
+    --border: 240 5% 20%;
+    --input: 240 5% 15%;
+    --ring: 0 0% 95%;
+
+    /* Status colors */
+    --success: 120 60% 50%;
+    --success-foreground: 0 0% 95%;
+    --warning: 45 90% 60%;
+    --warning-foreground: 240 15% 6%;
+    --destructive: 0 70% 60%;
+    --destructive-foreground: 0 0% 95%;
+
+    --radius: 1.25rem;
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: Inter, system-ui, sans-serif;
+  }
+}

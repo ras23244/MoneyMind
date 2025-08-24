@@ -1,0 +1,11 @@
+# Ignore node_modules only inside server/
+Backend/node_modules/
+Backend/.env
+
+
+Frontend/node_modules/
+Frontend/.env
+
+# General
+.DS_Store
+*.log
