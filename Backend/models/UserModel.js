@@ -44,7 +44,10 @@ const userSchema = new mongoose.Schema({
         type:String,
 
     },
-
+    bankAccounts:{
+        type:[mongoose.Schema.Types.ObjectId],
+        ref:'Account'
+    },
     createdAt:{
         type:Date,
         default:Date.now,

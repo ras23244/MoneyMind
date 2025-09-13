@@ -217,12 +217,7 @@ const FinanceDashboard = () => {
         }).format(Math.abs(amount));
     };
 
-    // Filter transactions by selected date
-    const getTransactionsByDate = (date) => {
-        const dateString = date.toISOString().split('T')[0];
-        return allTransactions.filter(transaction => transaction.date === dateString);
-    };
-
+   
     // Format date string into "Wed, Jan 3" format
     const formatDate = (dateString) => {
         return new Intl.DateTimeFormat('en-US', {

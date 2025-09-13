@@ -1,6 +1,6 @@
 const express = require('express');
 const User = require('../models/UserModel');
-const generateToken= require('../utils/generateToken');
+const generateToken = require('../utils/generateToken');
 const sendMail = require('../utils/sendMail');
 const bcrypt = require('bcrypt');
 
@@ -13,16 +13,16 @@ exports.register = async (req, res) => {
 
         if (userExists) return res.status(400).json({ message: 'User already exists' });
 
-        const user = await User.create({ 
+        const user = await User.create({
             fullname: { firstname, lastname },
             email: email.toLowerCase(),
-            password: password 
+            password: password
         });
 
         const token = generateToken(user);
 
         res.status(201).json({
-            token:token,
+            token: token,
             message: 'User registered successfully',
             user: { id: user._id, name: `${user.fullname.firstname} ${user.fullname.lastname}`, email: user.email }
         });
@@ -44,16 +44,10 @@ exports.login = async (req, res) => {
 
         const token = generateToken(user);
 
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'Strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
-
         res.status(200).json({
             message: 'Login successful',
-            user: { id: user._id, fullname: user.fullname, email: user.email },
+            token: token,
+            user: { _id: user._id, fullname: user.fullname, email: user.email },
         });
     } catch (err) {
         res.status(500).json({ message: 'Server error', error: err.message });
@@ -62,8 +56,6 @@ exports.login = async (req, res) => {
 
 // @route   POST /users/logout
 exports.logout = (req, res) => {
-    res.clearCookie('connect.sid');
-    res.clearCookie('token');
     res.status(200).json({ message: 'Logged out successfully' });
 };
 
@@ -73,23 +65,23 @@ exports.getMe = async (req, res) => {
     res.status(200).json(user);
 };
 
-exports.forgetPassword = async (req,res)=>{
-    const {email}=req.body;
+exports.forgetPassword = async (req, res) => {
+    const { email } = req.body;
     try {
         const user = await User.findOne({ email });
         if (!user) return res.status(404).json({ message: 'User not found' });
 
         const userOtp = user.password_otp?.otp;
-        if(userOtp){
-            const timeDiff= new Date().getTime()-new Date(user.password_otp.last_attempt).getTime()<=24*60*60*1000;
+        if (userOtp) {
+            const timeDiff = new Date().getTime() - new Date(user.password_otp.last_attempt).getTime() <= 24 * 60 * 60 * 1000;
 
-            if(!timeDiff){
-                user.password_otp.limit=5
+            if (!timeDiff) {
+                user.password_otp.limit = 5
                 await user.save();
             }
 
             const remainingLimit = user.password_otp.limit === 0;
-            if(timeDiff && remainingLimit){
+            if (timeDiff && remainingLimit) {
                 return res.status(400).json({ message: 'OTP request limit reached. Please try again after 24 hours.' });
             }
         }
@@ -98,15 +90,15 @@ exports.forgetPassword = async (req,res)=>{
         user.password_otp.otp = otp;
         user.password_otp.limit--;
         user.password_otp.last_attempt = new Date();
-        user.password_otp.send_time = new Date().getTime()+5*60*1000;
+        user.password_otp.send_time = new Date().getTime() + 5 * 60 * 1000;
         await user.save();
 
         // Send OTP to user's email
-       const result= await sendMail({
+        const result = await sendMail({
             email: user.email,
             otp: otp
         });
-      
+
         res.status(200).json({ message: 'OTP sent successfully' });
     } catch (error) {
         console.log(error)
@@ -114,8 +106,8 @@ exports.forgetPassword = async (req,res)=>{
     }
 }
 
-exports.verifyOtp= async(req,res)=>{
-    const {otp} =req.body;
+exports.verifyOtp = async (req, res) => {
+    const { otp } = req.body;
     try {
         const user = await User.findOne({ 'password_otp.otp': otp });
         if (!user) return res.status(404).json({ message: 'Invalid OTP' });
@@ -137,15 +129,15 @@ exports.verifyOtp= async(req,res)=>{
     }
 }
 
-exports.getTime = async(req,res)=>{
+exports.getTime = async (req, res) => {
     try {
-        const {email}=req.body;
-        const user= await User.findOne({ email });
-        if(!user){
+        const { email } = req.body;
+        const user = await User.findOne({ email });
+        if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        const time= user.password_otp.send_time;
-        res.status(200).json({message:"otp sent", time });
+        const time = user.password_otp.send_time;
+        res.status(200).json({ message: "otp sent", time });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -160,18 +152,18 @@ exports.updatePassword = async (req, res) => {
             return res.status(400).json({ message: "All fields are required" });
         }
 
-       
+
         const user = await User.findOne({ email });
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
-        
+
         const isMatch = await user.comparePassword(currentPassword);
         if (!isMatch) {
             return res.status(401).json({ message: "Current password is incorrect" });
         }
 
-        
+
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
         user.password = hashedPassword;
@@ -181,6 +173,6 @@ exports.updatePassword = async (req, res) => {
 
     } catch (error) {
         console.error("Update password error:", error);
-        res.status(500).json({ message: "Server error",error:error.message });
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 };

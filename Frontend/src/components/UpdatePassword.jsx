@@ -18,9 +18,6 @@ function UpdatePassword() {
         password: '',
     }
 
- 
-   
-
     const validationSchema = Yup.object().shape({
         password: Yup.string().min(6, 'Too Short!').required('Required'),
     });

@@ -10,7 +10,7 @@ import useGeneral from './hooks/useGeneral';
 import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { useUser } from '../context/UserContext'; // Assuming you have a custom hook to access UserContext
+import { useUser } from '../context/UserContext'; 
 
 function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -32,14 +32,16 @@ function Login() {
       const res = await axios.post(`${import.meta.env.VITE_BASE_URL}users/login`, {
         email: values.email,
         password: values.password
-      },
-        { withCredentials: true }
+      }
       )
 
       if (res.status == 200) {
         toast.success('Login successful!');
-        login(res.data.user);
-        navigate("/")
+        localStorage.setItem('token', res.data.token);
+        console.log("Login successful")
+        // In your Login.jsx after successful login:
+        login(res.data.user, res.data.token);
+        navigate("/link-bank-account");
       }
     }
     catch (err) {

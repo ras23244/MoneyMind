@@ -42,8 +42,7 @@ function Signup() {
                 },
                 email: values.email,
                 password: values.password
-            },
-                { withCredentials: true });
+            });
             if (res.status === 201) {
                 toast.success('Registration successful!');
                 navigate('/login');

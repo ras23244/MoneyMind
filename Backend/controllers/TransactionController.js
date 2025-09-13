@@ -3,13 +3,16 @@ const Transaction = require('../models/TransactionModel');
 
 exports.createTransaction = async (req, res) => {
     try {
-        const { userId, description, amount, type, category, tags } = req.body;
+        const { userId,bankAccountId, description, amount, type,date, category, tags } = req.body;
+        console.log("Creating transaction with data:", req.body);
 
         const newTransaction = await Transaction.create({
             userId,
+            accountId: bankAccountId,
             description,
             amount,
             type,
+            date,
             category,
             tags
         });
@@ -19,6 +22,7 @@ exports.createTransaction = async (req, res) => {
             data: newTransaction
         });
     } catch (error) {
+        console.log("Error creating transaction:", error);
         res.status(500).json({
             success: false,
             error: error.message
@@ -65,7 +69,7 @@ exports.getTransactionById = async (req, res) => {
 
 exports.updateTransaction = async (req, res) => {
     try {
-        const { description, amount, type, category, tags } = req.body;
+        const { description, amount, type, category, tags, date } = req.body;
         const transaction = await Transaction.findOneAndUpdate(
             { userId: req.user.id, _id: req.params.id },
             { description, amount, type, category, tags },
