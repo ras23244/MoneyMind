@@ -24,8 +24,7 @@ export default function FinanceDashboard() {
         return <div>Please log in to continue.</div>;
         // or navigate("/login")
     }
-    console.log("Fin D", user)
-    console.log("user from context", user);
+    
     const { navigate } = useGeneral();
 
     const [isBalanceVisible, setIsBalanceVisible] = useState(true);
@@ -34,11 +33,17 @@ export default function FinanceDashboard() {
     const [open, setOpen] = useState(false);
     const [transactions, setTransactions] = useState(initialTransactions);
 
+   
     // helper functions
     const formatCurrency = (amount) => {
         if (!isBalanceVisible && Math.abs(amount) > 1000) return "••••••";
-        return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 }).format(Math.abs(amount));
+        return new Intl.NumberFormat("en-IN", {
+            style: "currency",
+            currency: "INR",
+            minimumFractionDigits: 2
+        }).format(Math.abs(amount));
     };
+
 
     const getTransactionsByDate = (date) => {
         const dateString = new Date(date).toISOString().split("T")[0];
@@ -65,7 +70,7 @@ export default function FinanceDashboard() {
                     {/* Header */}
                     <div className="flex items-center justify-between mb-8">
                         <div>
-                            <h2 className="text-3xl font-bold text-white">Good morning, {userData.name}</h2>
+                            <h2 className="text-3xl font-bold text-white">Good morning, {user?.fullname.firstname}</h2>
                             <p className="text-white/60 mt-1">Here's your financial overview</p>
                         </div>
                         <div className="flex items-center gap-3">
@@ -97,12 +102,12 @@ export default function FinanceDashboard() {
                     {/* Transactions */}
                     {activeTab === "transactions" && (
                         <TransactionsPanel
-                            transactionTrendData={transactionTrendData}
+                          
                             selectedDate={selectedDate}
                             setSelectedDate={setSelectedDate}
-                            allTransactions={transactions}
+                            
                             formatCurrency={formatCurrency}
-                            getTransactionsByDate={getTransactionsByDate}
+                            
                         />
                     )}
                 </div>

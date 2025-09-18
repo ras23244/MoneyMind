@@ -12,4 +12,6 @@ router.delete('/delete-transaction/:id', protect, TransactionController.deleteTr
 
 //filter transactions based on tags or category
 router.get('/filter-transactions', protect, TransactionController.filterTransactions);
+
+router.get("/trends", protect, TransactionController.getTransactionTrends);
 module.exports=router;

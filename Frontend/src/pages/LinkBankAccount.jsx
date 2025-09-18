@@ -40,7 +40,7 @@ const LinkBankAccount = () => {
             if (res.status === 201) {
                 toast.success("Bank account linked successfully! Redirecting...")
                 patchUser(res.data.user)
-                setTimeout(() => navigate('/dashboard'), 3000) // navigate after delay
+                navigate('/dashboard')// navigate after delay
             }
         } catch (err) {
             toast.error(err.response?.data?.message || "Failed to link bank account")

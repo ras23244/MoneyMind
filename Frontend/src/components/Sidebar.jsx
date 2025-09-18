@@ -4,7 +4,7 @@ import { useUser } from '../context/UserContext';
 
 export default function Sidebar({ navigation, activeTab, setActiveTab, creditScore }) {
     const { user } = useUser();
-    console.log("USer from sidebar",user)
+    
 
     return (
         <aside className="w-64 bg-card-dark border-r border-white/10 p-6 flex flex-col h-screen">

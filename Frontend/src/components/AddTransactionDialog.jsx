@@ -1,31 +1,61 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import axios from "axios";
-import { useUser} from '../context/UserContext';
+import { useUser } from '../context/UserContext';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useAddTransaction } from "./hooks/useAddTransaction";
+import { useEditTransaction } from "./hooks/useEditTransaction";
 
-export default function AddTransactionDialog({ open, setOpen, userId, onTransactionCreated }) {
-    const {user}= useUser();
-    console.log("user form transaction dialog",user)
+export default function AddTransactionDialog({ open, setOpen, userId, transaction, onTransactionCreated }) {
+    const { user } = useUser();
+    const addTransactionMutation = useAddTransaction(userId);
+    const editTransactionMutation = useEditTransaction(userId);
+
+    // If editing, initialize form with transaction data
     const [form, setForm] = useState({
         userId: userId,
         description: "",
         amount: "",
-        bankName:"",
+        bankAccountId: "",
         type: "expense",
         category: "",
         tags: "",
         date: new Date(),
     });
 
+    useEffect(() => {
+        if (transaction) {
+            setForm({
+                userId: userId,
+                description: transaction.description || "",
+                amount: transaction.amount || "",
+                bankAccountId: transaction.bankAccountId || "",
+                type: transaction.type || "expense",
+                category: transaction.category || "",
+                tags: transaction.tags || "",
+                date: transaction.date ? new Date(transaction.date) : new Date(),
+                _id: transaction._id, // needed for edit
+            });
+        } else {
+            setForm({
+                userId: userId,
+                description: "",
+                amount: "",
+                bankAccountId: "",
+                type: "expense",
+                category: "",
+                tags: "",
+                date: new Date(),
+            });
+        }
+    }, [transaction, userId, open]);
+
     const [loading, setLoading] = useState(false);
 
-  
     const handleChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
     const handleTypeChange = (val) => setForm((f) => ({ ...f, type: val }));
     const handleCategoryChange = (val) => setForm((f) => ({ ...f, category: val }));
@@ -35,40 +65,40 @@ export default function AddTransactionDialog({ open, setOpen, userId, onTransact
         e.preventDefault();
         setLoading(true);
 
-        try {
-            const token = localStorage.getItem("token");
-            console.log("Submitting form:", form);
-
-            const res = await axios.post(
-                `${import.meta.env.VITE_BASE_URL}transactions/create-transaction`,
-                { ...form },
-                { headers: { Authorization: `Bearer ${token}` } }
+        if (transaction && transaction._id) {
+            // Edit mode
+            editTransactionMutation.mutate(
+                form,
+                {
+                    onSuccess: (data) => {
+                        toast.success("Transaction updated successfully!");
+                        if (onTransactionCreated) onTransactionCreated(data);
+                        setOpen(false);
+                    },
+                    onError: (error) => {
+                        toast.error("Failed to update transaction. Please try again.");
+                        console.error("Error updating transaction:", error.response?.data || error.message);
+                    },
+                    onSettled: () => setLoading(false),
+                }
             );
-
-           if(res.status===201){
-            toast.success("Transaction added successfully!")
-           }
-
-            if (onTransactionCreated) {
-                onTransactionCreated(res.data); // callback to parent if needed
-            }
-
-            setOpen(false); 
-            setForm({
-                userId,
-                description: "",
-                amount: "",
-                bankAccountId: "",                        
-                type: "expense",
-                category: "",
-                tags: "",
-                date: new Date(),
-            });
-        } catch (error) {
-            toast.error("Failed to add transaction. Please try again.");
-            console.error("Error creating transaction:", error.response?.data || error.message);
-        } finally {
-            setLoading(false);
+        } else {
+            // Add mode
+            addTransactionMutation.mutate(
+                form,
+                {
+                    onSuccess: (data) => {
+                        toast.success("Transaction added successfully!");
+                        if (onTransactionCreated) onTransactionCreated(data);
+                        setOpen(false);
+                    },
+                    onError: (error) => {
+                        toast.error("Failed to add transaction. Please try again.");
+                        console.error("Error creating transaction:", error.response?.data || error.message);
+                    },
+                    onSettled: () => setLoading(false),
+                }
+            );
         }
     };
 
@@ -77,7 +107,9 @@ export default function AddTransactionDialog({ open, setOpen, userId, onTransact
             <ToastContainer />
             <DialogContent className="bg-[#242124] border border-white/10 max-w-md">
                 <DialogHeader>
-                    <DialogTitle className="text-white">Add Transaction</DialogTitle>
+                    <DialogTitle className="text-white">
+                        {transaction ? "Edit Transaction" : "Add Transaction"}
+                    </DialogTitle>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -111,9 +143,8 @@ export default function AddTransactionDialog({ open, setOpen, userId, onTransact
                         <Label htmlFor="bankName" className="text-white mb-1">
                             Bank Name
                         </Label>
-
                         <Select
-                            value={form.bankAccountId}  // ✅ store account _id in form
+                            value={form.bankAccountId}
                             onValueChange={(val) =>
                                 handleChange({ target: { name: "bankAccountId", value: val } })
                             }
@@ -127,19 +158,16 @@ export default function AddTransactionDialog({ open, setOpen, userId, onTransact
                                     const maskedAcc =
                                         accNum.length > 4
                                             ? "*".repeat(accNum.length - 4) + accNum.slice(-4)
-                                            : accNum; // if <4 digits, show as is
-
+                                            : accNum;
                                     return (
                                         <SelectItem key={acc._id} value={acc._id}>
                                             {acc.bankName} • {maskedAcc}
                                         </SelectItem>
                                     );
                                 })}
-
                             </SelectContent>
                         </Select>
                     </div>
-
 
                     {/* Type & Category */}
                     <div className="flex justify-between gap-4">
@@ -155,7 +183,6 @@ export default function AddTransactionDialog({ open, setOpen, userId, onTransact
                                 </SelectContent>
                             </Select>
                         </div>
-
                         <div className="flex-1">
                             <Label htmlFor="category" className="text-white mb-1">Category</Label>
                             <Select value={form.category} onValueChange={handleCategoryChange}>
@@ -209,16 +236,16 @@ export default function AddTransactionDialog({ open, setOpen, userId, onTransact
                     <DialogFooter>
                         <Button
                             type="submit"
-                            className="bg-white text-black hover:bg-white/90"
+                            className="bg-white text-black hover:bg-white/90 cursor-pointer"
                             disabled={loading}
                         >
-                            {loading ? "Saving..." : "Save"}
+                            {loading ? (transaction ? "Saving..." : "Saving...") : (transaction ? "Update" : "Save")}
                         </Button>
                         <DialogClose asChild>
                             <Button
                                 type="button"
                                 variant="outline"
-                                className="border-white/20 text-white"
+                                className="border-white/20 text-white cursor-pointer"
                             >
                                 Cancel
                             </Button>

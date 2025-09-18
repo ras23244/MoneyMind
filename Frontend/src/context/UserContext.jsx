@@ -19,7 +19,7 @@ export const UserProvider = ({ children }) => {
             try {
                 const token = localStorage.getItem("token");
                 if (!token) {
-                    console.log("No token found, user not logged in");
+                  
                     setUser(null);
                     setLoading(false);
                     return;
@@ -27,12 +27,12 @@ export const UserProvider = ({ children }) => {
 
                 // ✅ If user already in localStorage, skip API fetch
                 if (user) {
-                    console.log("User already in state:", user);
+                   
                     setLoading(false);
                     return;
                 }
 
-                 console.log("There was no user but had token so fetching user data from API")
+                
                 const res = await axios.get(
                     `${import.meta.env.VITE_BASE_URL}users/me`,
                     {
@@ -62,7 +62,7 @@ export const UserProvider = ({ children }) => {
             localStorage.setItem("token", token);
         }
         localStorage.setItem("user", JSON.stringify(userData));
-        console.log("User logged in:", userData);
+      
     };
 
     const patchUser = (partialData) => {
@@ -70,7 +70,7 @@ export const UserProvider = ({ children }) => {
         setUser((prevUser) => {
             updatedUser = { ...prevUser, ...partialData };
             localStorage.setItem("user", JSON.stringify(updatedUser));
-            console.log("User updated:", updatedUser);
+      
             return updatedUser;
         });
         return updatedUser; 

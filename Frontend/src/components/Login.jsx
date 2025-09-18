@@ -38,7 +38,7 @@ function Login() {
       if (res.status == 200) {
         toast.success('Login successful!');
         localStorage.setItem('token', res.data.token);
-        console.log("Login successful")
+ 
         // In your Login.jsx after successful login:
         login(res.data.user, res.data.token);
         navigate("/link-bank-account");
