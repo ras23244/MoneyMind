@@ -12,6 +12,7 @@ import { Bell, Plus, Home, Receipt, Target, Goal, BarChart3, Wallet } from "luci
 import { useUser } from '../context/UserContext';
 import AddTransactionDialog from "../components/AddTransactionDialog";
 import useGeneral from "../components/hooks/useGeneral";
+import Budgets from "../components/Budgets";
 
 export default function FinanceDashboard() {
     const { user, loading } = useUser();
@@ -98,6 +99,9 @@ export default function FinanceDashboard() {
 
                     {/* Goals */}
                     {activeTab === "goals" && <GoalsPanel financialGoals={financialGoals} formatCurrency={formatCurrency} />}
+
+                    {/* Budgets */}
+                    {activeTab === "budgets" && <Budgets />}
 
                     {/* Transactions */}
                     {activeTab === "transactions" && (

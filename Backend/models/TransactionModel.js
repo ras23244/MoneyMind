@@ -16,6 +16,10 @@ const transactionSchema = new mongoose.Schema({
         trim: true,
         required: [true, 'Please add a description'],
     },
+    note:{
+        type: String,
+        trim: true,
+    },
 
     amount: {
         type: Number,

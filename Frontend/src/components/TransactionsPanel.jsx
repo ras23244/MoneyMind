@@ -9,7 +9,6 @@ import { useEditTransaction } from "./hooks/useEditTransaction";
 import { useDeleteTransaction } from "./hooks/useDeleteTransaction";
 import TransactionDetailsPanel from "./TransactionDetailsPanel";
 
-// ✅ Import your new components
 import TransactionTrendsChart from "./TransactionTrendsChart";
 import TransactionCalendar from "./TransactionCalendar";
 import TransactionBreakdownChart from "./TransactionBreakdownChart";
@@ -19,7 +18,7 @@ export default function TransactionsPanel({ selectedDate, setSelectedDate, forma
     const [search, setSearch] = useState("");
     const [editing, setEditing] = useState(null);
     const [openDialog, setOpenDialog] = useState(false);
-    const [limit, setLimit] = useState(5);
+    const [limit, setLimit] = useState(3);
     const [selectedTag, setSelectedTag] = useState(null);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
 
@@ -81,10 +80,15 @@ export default function TransactionsPanel({ selectedDate, setSelectedDate, forma
     // 🔹 Pie chart data
     const { mainChartData, drilldownChartData } = useMemo(() => {
         const tagsData = {};
+
         allTransactions.forEach((t) => {
-            if (t.type === "expense" && t.tags) {
-                const tags = Array.isArray(t.tags) ? t.tags : t.tags.split(",").map((tag) => tag.trim());
-                tags.forEach((tag) => {
+            if (t.type === "expense") {
+                // Use tags if available, otherwise fallback to category as a single-item array
+                const sourceTags = t.tags && t.tags.length > 0
+                    ? t.tags
+                    : [t.category];
+
+                sourceTags.forEach((tag) => {
                     const normalizedTag = tag.toLowerCase();
                     tagsData[normalizedTag] = (tagsData[normalizedTag] || 0) + t.amount;
                 });
@@ -96,16 +100,19 @@ export default function TransactionsPanel({ selectedDate, setSelectedDate, forma
             value: tagsData[tag],
         }));
 
+        // Drilldown chart
         const drilldownData = {};
         if (selectedTag) {
             allTransactions.forEach((t) => {
-                if (
-                    t.type === "expense" &&
-                    t.tags &&
-                    t.tags.map((tag) => tag.trim().toLowerCase()).includes(selectedTag)
-                ) {
-                    const breakdownKey = t.description || t.category || "Uncategorized";
-                    drilldownData[breakdownKey] = (drilldownData[breakdownKey] || 0) + t.amount;
+                if (t.type === "expense") {
+                    const sourceTags = t.tags && t.tags.length > 0
+                        ? t.tags
+                        : [t.category];
+
+                    if (sourceTags.map(tag => tag.toLowerCase()).includes(selectedTag)) {
+                        const breakdownKey = t.description || t.category || "Uncategorized";
+                        drilldownData[breakdownKey] = (drilldownData[breakdownKey] || 0) + t.amount;
+                    }
                 }
             });
         }
@@ -118,6 +125,7 @@ export default function TransactionsPanel({ selectedDate, setSelectedDate, forma
         return { mainChartData, drilldownChartData };
     }, [allTransactions, selectedTag]);
 
+
     if (trendsLoading || txLoading) return <p className="text-white">Loading...</p>;
     if (trendsError || txError) return <p className="text-red-500">Error loading transactions.</p>;
 
@@ -129,13 +137,13 @@ export default function TransactionsPanel({ selectedDate, setSelectedDate, forma
                 <TransactionCalendar selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
             </div>
 
-            {/* Pie Charts */}
+            {/* Pie Charts
             <TransactionBreakdownChart
                 mainChartData={mainChartData}
                 drilldownChartData={drilldownChartData}
                 selectedTag={selectedTag}
                 setSelectedTag={setSelectedTag}
-            />
+            /> */}
 
             {/* Transaction List */}
             <TransactionsList

@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const financialGoalsSchema=new mongoose.Schema({
+const goalSchema=new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -40,4 +40,4 @@ const financialGoalsSchema=new mongoose.Schema({
     },
 });
 
-module.exports = mongoose.model('FinancialGoals', financialGoalsSchema);
+module.exports = mongoose.model('Goal', goalSchema);

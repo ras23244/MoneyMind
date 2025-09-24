@@ -14,6 +14,7 @@ const googleStrategy = require('passport-google-oauth20').Strategy;
 const userRoutes= require('./routes/UserRoutes');
 const transactionRoutes = require('./routes/TransactionRoutes');
 const accountRoutes = require('./routes/AccountRoutes');
+const budgetRoutes = require('./routes/BudgetRoutes');
 
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
@@ -75,6 +76,7 @@ app.get('/', (req, res) => {
 app.use('/users', userRoutes);
 app.use('/transactions', transactionRoutes);
 app.use('/account', accountRoutes);
+app.use('/budgets',budgetRoutes);
 
 module.exports = app;
 

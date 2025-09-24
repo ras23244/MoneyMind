@@ -55,7 +55,7 @@ export default function TransactionBreakdownChart({
                         </Pie>
                         <Tooltip
                             contentStyle={{
-                                backgroundColor: "rgba(17, 24, 39, 0.95)",
+                                backgroundColor: "white",
                                 border: "1px solid rgba(255,255,255,0.15)",
                                 borderRadius: "8px",
                                 color: "#fff",
@@ -89,7 +89,7 @@ export default function TransactionBreakdownChart({
                             </Pie>
                             <Tooltip
                                 contentStyle={{
-                                    backgroundColor: "rgba(17, 24, 39, 0.95)",
+                                    backgroundColor: "white",
                                     border: "1px solid rgba(255,255,255,0.15)",
                                     borderRadius: "8px",
                                     color: "#fff",

@@ -4,13 +4,14 @@ const mongoose = require('mongoose');
 
 exports.createTransaction = async (req, res) => {
     try {
-        const { userId,bankAccountId, description, amount, type,date, category, tags } = req.body;
+        const { userId,bankAccountId, description, amount, type,date,note,category, tags } = req.body;
        
 
         const newTransaction = await Transaction.create({
             userId,
             accountId: bankAccountId,
             description,
+            note,
             amount,
             type,
             date,
@@ -70,10 +71,10 @@ exports.getTransactionById = async (req, res) => {
 
 exports.updateTransaction = async (req, res) => {
     try {
-        const { description, amount, type, category, tags, date } = req.body;
+        const { description, amount, type, category, note, tags, date } = req.body;
         const transaction = await Transaction.findOneAndUpdate(
             { userId: req.user.id, _id: req.params.id },
-            { description, amount, type, category, tags },
+            { description, amount, type, category, note, tags, date },
             { new: true }
         );
         if (!transaction) {
@@ -189,3 +190,4 @@ exports.getTransactionTrends = async (req, res) => {
         res.status(500).json({ message: "Error fetching trends" });
     }
 };
+
