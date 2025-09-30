@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -81,19 +82,31 @@ export default function AddBudgetDialog({ open, setOpen, onSave, initialBudget }
                 <div className="space-y-4">
                     <div>
                         <Label className="text-white/80 mb-1">Category</Label>
-                        <Input
-                            name="category"
-                            placeholder="Select or type category"
-                            list="budget-categories"
-                            value={form.category}
-                            onChange={handleChange}
-                            className="bg-black/40 border-white/20 text-white mt-2"
-                        />
-                        <datalist id="budget-categories">
-                            {Object.keys(budgetImages).filter(c => c !== "default").map((category) => (
-                                <option key={category} value={category} />
-                            ))}
-                        </datalist>
+                        <div className="relative">
+                            {/* Input for typing */}
+                            <Input
+                                name="category"
+                                placeholder="Select or type category"
+                                value={form.category}
+                                onChange={handleChange}
+                                className="bg-black/40 border-white/20 text-white pr-10 mt-2"
+                            />
+
+                            {/* Dropdown for predefined categories */}
+                            <Select value={form.category} onValueChange={(value) => setForm({ ...form, category: value })}>
+                                <SelectTrigger className="absolute top-0 right-0 h-full w-8 border-0 bg-transparent text-white flex items-center justify-center cursor-pointer">
+                                </SelectTrigger>
+                                <SelectContent className="bg-[#242124] border-white/10 text-white max-h-60 overflow-y-auto">
+                                    {Object.keys(budgetImages)
+                                        .filter((c) => c !== "default")
+                                        .map((category) => (
+                                            <SelectItem key={category} value={category}>
+                                                {category}
+                                            </SelectItem>
+                                        ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                     <div>
                         <Label className="text-white/80">Amount (₹)</Label>

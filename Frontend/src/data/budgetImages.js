@@ -17,6 +17,9 @@ const budgetImages = {
     Gifts: "/images/gifts.jpg",
     Dining: "/images/dining.jpg",
     cosmetics: "/images/cosmetics.jpg",
+    beauty: "/images/beauty.jpg",
+    fitness: "/images/fitness.jpg",
+    gym: "/images/gym.jpg",
     essentials: "/images/essentials.jpg",
     default: "/images/default.jpg"
 };

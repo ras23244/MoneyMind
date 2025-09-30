@@ -19,7 +19,8 @@ import CashFlowChart from "../components/CashFlowChart";
 import { useBudgets } from "../components/hooks/useBudgets";
 import { BudgetProgressCircle } from "../components/Analytics";
 import NotesPanel from "../components/NotesPanel";
-import budgetImages from "../data/budgetImages"; // Assume you have an object mapping category names to images
+import budgetImages from "../data/budgetImages"; 
+import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards";
 
 export default function FinanceDashboard() {
     const { user, loading } = useUser();
@@ -127,10 +128,11 @@ export default function FinanceDashboard() {
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                 {/* Daily Budgets (2/3 width) */}
                                 {dailyBudgets.length > 0 && (
-                                    <div className="lg:col-span-2 bg-[#1e1e1e] dark:bg-[#1e1e1e] rounded-2xl shadow p-4">
+                                    <div className="lg:col-span-2 bg-[#1e1e1e] dark:bg-[#1e1e1e] rounded-2xl shadow p-2 h-[max-content]">
                                         <h2 className="text-lg font-semibold mb-2">Daily Budgets</h2>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {dailyBudgets.map((budget) => {
+
+                                        <InfiniteMovingCards
+                                            items={dailyBudgets.map((budget) => {
                                                 const percent =
                                                     budget.amount > 0
                                                         ? Math.round((budget.spent / budget.amount) * 100)
@@ -138,18 +140,28 @@ export default function FinanceDashboard() {
                                                 let status = "On Track";
                                                 if (percent >= 100) status = "Exceeded";
                                                 else if (percent >= 80) status = "Near Limit";
-                                                return (
-                                                    <BudgetProgressCircle
-                                                        key={budget._id}
-                                                        title={budget.category}
-                                                        status={status}
-                                                        percentage={percent}
-                                                    />
-                                                );
+
+                                                return {
+                                                    quote: (
+                                                        <BudgetProgressCircle
+                                                            key={budget._id}
+                                                            title={budget.category}
+                                                            status={status}
+                                                            percentage={percent}
+                                                        />
+                                                    ),
+                                                    name: ``,
+                                                    title: ``,
+                                                };
                                             })}
-                                        </div>
+                                            direction="left"
+                                            speed="normal"
+                                            pauseOnHover={true}
+                                            className="max-w-full"
+                                        />
                                     </div>
                                 )}
+
 
                                 {/* Insights (1/3 width) */}
                                 <div className="bg-[#1e1e1e] dark:bg-[#1e1e1e] rounded-2xl shadow p-4 flex flex-col h-[500px]">

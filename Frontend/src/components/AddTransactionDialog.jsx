@@ -9,6 +9,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useAddTransaction } from "./hooks/useAddTransaction";
 import { useEditTransaction } from "./hooks/useEditTransaction";
+import budgetImages from "../data/budgetImages";
 
 export default function AddTransactionDialog({ open, setOpen, userId, transaction, onTransactionCreated }) {
     const { user } = useUser();
@@ -189,14 +190,12 @@ export default function AddTransactionDialog({ open, setOpen, userId, transactio
                                 <SelectTrigger className="bg-card border-white/10 text-white">
                                     <SelectValue placeholder="Select category" />
                                 </SelectTrigger>
-                                <SelectContent className="bg-[#242124] border-white/10 text-white">
-                                    <SelectItem value="Salary">Salary</SelectItem>
-                                    <SelectItem value="Food">Food</SelectItem>
-                                    <SelectItem value="Transport">Transport</SelectItem>
-                                    <SelectItem value="Bills">Bills</SelectItem>
-                                    <SelectItem value="Shopping">Shopping</SelectItem>
-                                    <SelectItem value="Entertainment">Entertainment</SelectItem>
-                                    <SelectItem value="Other">Other</SelectItem>
+                                <SelectContent className="bg-[#242124] border-white/10 text-white max-h-60 overflow-y-auto">
+                                    {Object.keys(budgetImages).map((category) => (
+                                        <SelectItem key={category} value={category}>
+                                            {category}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
