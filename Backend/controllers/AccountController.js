@@ -1,4 +1,3 @@
-const express = require('express')
 const UserModel = require('../models/UserModel');
 const AccountModel = require('../models/AccountModel');
 
@@ -38,6 +37,18 @@ exports.linkBankAccount = async (req, res) => {
         });
     } catch (error) {
         console.error('Error linking bank account:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+
+exports.getAccounts = async (req, res) => {
+    try {
+        const userId = req.user._id; 
+        const accounts = await AccountModel.find({ userId });
+        res.status(200).json(accounts);
+    } catch (error) {
+        console.error('Error fetching accounts:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 };

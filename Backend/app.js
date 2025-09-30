@@ -15,6 +15,8 @@ const userRoutes= require('./routes/UserRoutes');
 const transactionRoutes = require('./routes/TransactionRoutes');
 const accountRoutes = require('./routes/AccountRoutes');
 const budgetRoutes = require('./routes/BudgetRoutes');
+const goalRoutes = require('./routes/GoalRoutes');
+const noteRoutes = require('./routes/NoteRoutes');
 
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
@@ -77,6 +79,8 @@ app.use('/users', userRoutes);
 app.use('/transactions', transactionRoutes);
 app.use('/account', accountRoutes);
 app.use('/budgets',budgetRoutes);
+app.use('/goals', goalRoutes);
+app.use('/notes', noteRoutes);
 
 module.exports = app;
 

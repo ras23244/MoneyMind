@@ -1,11 +1,11 @@
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
-import { Search, Edit, Trash, Download, Calendar as CalendarIcon, TrendingUp, TrendingDown } from "lucide-react";
+import { Search, Download, Calendar as CalendarIcon, TrendingUp, TrendingDown, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 export default function TransactionList({
-    transactions=[],
+    transactions = [],
     search,
     setSearch,
     formatCurrency,
@@ -17,13 +17,15 @@ export default function TransactionList({
     setSelectedTransaction,
     selectedDate,
 }) {
+
+    console.log("selectedDate in TransactionList:", selectedDate);
     return (
         <Card className="bg-card-dark border border-white/10 mt-6">
             <CardHeader>
                 <div className="flex items-center justify-between gap-3">
                     <div>
                         <CardTitle className="text-white">
-                            Transactions for {new Date(selectedDate).toLocaleDateString()}
+                            Transactions for {new Date(selectedDate).toISOString().split("T")[0]}
                         </CardTitle>
                         <p className="text-white/60 text-sm mt-1">
                             {transactions.length} transaction(s) found
@@ -57,7 +59,7 @@ export default function TransactionList({
                             <div
                                 key={transaction._id}
                                 onClick={() => setSelectedTransaction(transaction)}
-                                className="flex items-center justify-between cursor-pointer p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-all"
+                                className="flex items-center justify-between cursor-pointer p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-all group"
                             >
                                 <div className="flex items-center gap-4">
                                     <div
@@ -80,7 +82,9 @@ export default function TransactionList({
                                         </div>
                                     </div>
                                 </div>
-                                <div className="text-right">
+
+                                {/* Amount + Hover Actions */}
+                                <div className="flex items-center gap-3">
                                     <p
                                         className={`font-bold ${transaction.type === "income" ? "text-green-400" : "text-red-400"
                                             }`}
@@ -88,28 +92,28 @@ export default function TransactionList({
                                         {transaction.type === "income" ? "+" : ""}
                                         {formatCurrency(transaction.amount)}
                                     </p>
-                                    <div className="flex gap-2 mt-2">
+                                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                         <Button
-                                            size="sm"
-                                            variant="outline"
-                                            className="border-white/20 text-white cursor-pointer"
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-7 w-7 text-yellow-400 hover:text-yellow-300"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 handleEdit(transaction);
                                             }}
                                         >
-                                            <Edit className="w-3 h-3 mr-1" /> Edit
+                                            <Pencil className="w-4 h-4" />
                                         </Button>
                                         <Button
-                                            size="sm"
-                                            variant="outline"
-                                            className="border-white/20 text-red-400 cursor-pointer"
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-7 w-7 text-red-400 hover:text-red-300"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 handleDelete(transaction._id);
                                             }}
                                         >
-                                            <Trash className="w-3 h-3 mr-1 " /> Delete
+                                            <Trash2 className="w-4 h-4" />
                                         </Button>
                                     </div>
                                 </div>
@@ -122,6 +126,7 @@ export default function TransactionList({
                             <p className="text-white/40 text-sm mt-1">Try adjusting search</p>
                         </div>
                     )}
+
                     {transactions.length > limit && (
                         <div className="text-center mt-4">
                             <Button

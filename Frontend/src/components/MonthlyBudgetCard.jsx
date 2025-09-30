@@ -12,7 +12,7 @@ export default function MonthlyBudgetCard({ budgets }) {
             <Card className="bg-card-dark border border-white/10">
                 <CardHeader className="flex justify-between items-center">
                     <CardTitle className="text-white">Monthly Budget</CardTitle>
-                    
+
                 </CardHeader>
                 <CardContent>
                     <p className="text-white/60 text-sm">No budgets set for this month.</p>
@@ -35,7 +35,11 @@ export default function MonthlyBudgetCard({ budgets }) {
         <Card className="bg-card-dark border border-white/10">
             <CardHeader className="flex justify-between items-center">
                 <CardTitle className="text-white">Monthly Budget</CardTitle>
-               
+                <span className="text-xs text-white/60">
+                    {budgets[0]?.durationType === "day"
+                        ? `Daily Budget (${budgets[0]?.day})`
+                        : `Duration: ${budgets[0]?.duration || 1} month(s)`}
+                </span>
             </CardHeader>
             <CardContent>
                 <div className="flex justify-between text-sm text-white/70 mb-2">

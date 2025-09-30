@@ -13,6 +13,13 @@ import { useUser } from '../context/UserContext';
 import AddTransactionDialog from "../components/AddTransactionDialog";
 import useGeneral from "../components/hooks/useGeneral";
 import Budgets from "../components/Budgets";
+import Analytics from "../components/Analytics";
+import Accounts from "../components/Accounts";
+import CashFlowChart from "../components/CashFlowChart";
+import { useBudgets } from "../components/hooks/useBudgets";
+import { BudgetProgressCircle } from "../components/Analytics";
+import NotesPanel from "../components/NotesPanel";
+import budgetImages from "../data/budgetImages"; // Assume you have an object mapping category names to images
 
 export default function FinanceDashboard() {
     const { user, loading } = useUser();
@@ -25,7 +32,7 @@ export default function FinanceDashboard() {
         return <div>Please log in to continue.</div>;
         // or navigate("/login")
     }
-    
+
     const { navigate } = useGeneral();
 
     const [isBalanceVisible, setIsBalanceVisible] = useState(true);
@@ -33,8 +40,32 @@ export default function FinanceDashboard() {
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [open, setOpen] = useState(false);
     const [transactions, setTransactions] = useState(initialTransactions);
+    const [showNotes, setShowNotes] = useState(false);
 
-   
+    // Get current month for budgets
+    const month = new Date().toISOString().slice(0, 7);
+    const { data: budgets = [] } = useBudgets(user?._id, month);
+
+    // Filter monthly budgets (not daily, not "Monthly" meta-budget)
+    const monthlyBudgets = budgets.filter(
+        b => b.durationType === "month" && b.category !== "Monthly" && b.month === month
+    );
+
+
+
+    // Map to BudgetStatus card format
+    const budgetStatusCategories = monthlyBudgets.map(budget => ({
+        name: budget.category,
+        percentage: budget.amount > 0 ? Math.round((budget.spent / budget.amount) * 100) : 0,
+        spent: budget.spent,
+        budget: budget.amount,
+        image: budgetImages[budget.category] || budgetImages["default"], // fallback image
+    }));
+    
+
+    // Filter daily budgets
+    const dailyBudgets = budgets.filter(b => b.durationType === "day");
+
     // helper functions
     const formatCurrency = (amount) => {
         if (!isBalanceVisible && Math.abs(amount) > 1000) return "••••••";
@@ -80,38 +111,127 @@ export default function FinanceDashboard() {
                         </div>
                     </div>
 
+
                     {/* Overview */}
                     {activeTab === "overview" && (
                         <div className="space-y-6">
-                            <BalanceCards userData={userData} isBalanceVisible={isBalanceVisible} setIsBalanceVisible={setIsBalanceVisible} formatCurrency={formatCurrency} />
+                            {/* Balance Cards */}
+                            <BalanceCards
+                                userData={userData}
+                                isBalanceVisible={isBalanceVisible}
+                                setIsBalanceVisible={setIsBalanceVisible}
+                                formatCurrency={formatCurrency}
+                            />
 
+                            {/* Top Row: Daily Budgets (Left 2/3) + Insights (Right 1/3) */}
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                <RecentTransactions recentTransactions={recentTx} formatCurrency={formatCurrency} />
-                                <div className="lg:col-span-1">
-                                    <BudgetStatus initialCategories={budgetCategories} />
+                                {/* Daily Budgets (2/3 width) */}
+                                {dailyBudgets.length > 0 && (
+                                    <div className="lg:col-span-2 bg-[#1e1e1e] dark:bg-[#1e1e1e] rounded-2xl shadow p-4">
+                                        <h2 className="text-lg font-semibold mb-2">Daily Budgets</h2>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {dailyBudgets.map((budget) => {
+                                                const percent =
+                                                    budget.amount > 0
+                                                        ? Math.round((budget.spent / budget.amount) * 100)
+                                                        : 0;
+                                                let status = "On Track";
+                                                if (percent >= 100) status = "Exceeded";
+                                                else if (percent >= 80) status = "Near Limit";
+                                                return (
+                                                    <BudgetProgressCircle
+                                                        key={budget._id}
+                                                        title={budget.category}
+                                                        status={status}
+                                                        percentage={percent}
+                                                    />
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Insights (1/3 width) */}
+                                <div className="bg-[#1e1e1e] dark:bg-[#1e1e1e] rounded-2xl shadow p-4 flex flex-col h-[500px]">
+                                    {/* Header with toggle */}
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h2 className="text-lg font-semibold">Insights</h2>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => setShowNotes((prev) => !prev)}
+                                        >
+                                            {showNotes ? "Notes" : "Notes"}
+                                        </Button>
+                                    </div>
+
+                                    {/* Conditional Rendering */}
+                                    {showNotes ? (
+                                        <NotesPanel />
+                                    ) : (
+                                        <div className="overflow-y-auto flex-1 pr-1">
+                                            <ul className="space-y-2 text-sm">
+                                                <li className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
+                                                    ⚠️ You’ve already spent 80% of your Food budget.
+                                                </li>
+                                                <li className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                                                    🎉 You saved ₹10,000 this month – 20% more than usual!
+                                                </li>
+                                                <li className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
+                                                    🔮 Forecast: You may overspend on Shopping next month.
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+
+
+                            </div>
+
+                            {/* Bottom Row: Cash Flow (Left 2/3) + Monthly Budget (Right 1/3) */}
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                {/* Cash Flow Overview (2/3 width) */}
+                                <div className="lg:col-span-2 rounded-2xl shadow p-4">
+                                    <h2 className="text-lg font-semibold mb-4">Cash Flow Overview</h2>
+                                    <CashFlowChart />
+                                </div>
+
+                                {/* Monthly Budget Status (1/3 width) */}
+                                <div className="lg:col-span-1 bg-[#1e1e1e] dark:bg-[#1e1e1e]  rounded-2xl shadow p-4">
+                                    <h2 className="text-lg font-semibold mb-4">Monthly Budget Status</h2>
+                                    <BudgetStatus initialCategories={budgetStatusCategories} />
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* Connected accounts */}
-                    {activeTab === "accounts" && <ConnectedAccounts connectedBanks={connectedBanks} formatCurrency={formatCurrency} navigate={(p) => console.log("navigate", p)} />}
+
+
+
+                    {activeTab === "accounts" && (
+                        <Accounts />
+                    )}
 
                     {/* Goals */}
-                    {activeTab === "goals" && <GoalsPanel financialGoals={financialGoals} formatCurrency={formatCurrency} />}
+                    {activeTab === "goals" && <GoalsPanel formatCurrency={formatCurrency} />}
 
                     {/* Budgets */}
                     {activeTab === "budgets" && <Budgets />}
 
+                    {/* Analytics */}
+                    {activeTab === "analytics" && (
+                        <Analytics />
+                    )}
+
                     {/* Transactions */}
                     {activeTab === "transactions" && (
                         <TransactionsPanel
-                          
+
                             selectedDate={selectedDate}
                             setSelectedDate={setSelectedDate}
-                            
+
                             formatCurrency={formatCurrency}
-                            
+
                         />
                     )}
                 </div>
@@ -129,4 +249,4 @@ export default function FinanceDashboard() {
             />
         </div>
     );
-}  
+}

@@ -17,6 +17,20 @@ export default {
             }
         },
         extend: {
+            keyframes: {
+                wiggle: {
+                    '0%, 100%': { transform: 'rotate(-10deg)' },
+                    '50%': { transform: 'rotate(10deg)' },
+                },
+                bounceUp: {
+                    '0%, 100%': { transform: 'translateY(0)' },
+                    '50%': { transform: 'translateY(-8px)' },
+                },
+            },
+            animation: {
+                wiggle: 'wiggle 0.5s ease-in-out infinite',
+                bounceUp: 'bounceUp 0.6s ease-in-out infinite',
+            },
             fontFamily: {
                 inter: ['Inter', 'system-ui', 'sans-serif'],
             },

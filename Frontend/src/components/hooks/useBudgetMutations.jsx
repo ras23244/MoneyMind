@@ -14,7 +14,7 @@ export const useCreateBudget = (userId, month) => {
             return res.data.data;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["budgets", userId, month] });
+            queryClient.invalidateQueries({ queryKey: ["budgets", userId] });
         },
     });
 };
@@ -32,7 +32,7 @@ export const useUpdateBudget = (userId, month) => {
             return res.data.data;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["budgets", userId, month] });
+            queryClient.invalidateQueries({ queryKey: ["budgets", userId] });
         },
     });
 };
@@ -48,7 +48,7 @@ export const useDeleteBudget = (userId, month) => {
             );
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["budgets", userId, month] });
+            queryClient.invalidateQueries({ queryKey: ["budgets", userId] });
         },
     });
 };

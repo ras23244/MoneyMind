@@ -3,9 +3,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import budgetImages from "../data/budgetImages";
 
 export default function AddBudgetDialog({ open, setOpen, onSave, initialBudget }) {
-    const [form, setForm] = useState({ category: "", amount: "", spent: "" });
+    const [form, setForm] = useState({
+        category: "",
+        amount: "",
+        spent: "",
+        duration: 1,
+        durationType: "month",
+        day: "",
+    });
+    const [error, setError] = useState("");
 
     useEffect(() => {
         if (initialBudget) {
@@ -13,24 +22,54 @@ export default function AddBudgetDialog({ open, setOpen, onSave, initialBudget }
                 category: initialBudget.category || "",
                 amount: initialBudget.amount || "",
                 spent: initialBudget.spent || "",
+                duration: initialBudget.duration || 1,
+                durationType: initialBudget.durationType || "month",
+                day: initialBudget.day || "",
             });
         } else {
-            setForm({ category: "", amount: "", spent: "" });
+            setForm({
+                category: "",
+                amount: "",
+                spent: "",
+                duration: 1,
+                durationType: "month",
+                day: "",
+            });
         }
+        setError("");
     }, [initialBudget, open]);
 
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
+        setError("");
     };
 
     const handleSubmit = () => {
         if (!form.category || !form.amount) return;
+        if (form.durationType === "month" && Number(form.duration) > 12) {
+            setError("Budgets beyond 12 months are not allowed.");
+            return;
+        }
+        if (form.durationType === "day" && !form.day) {
+            setError("Please select a date for daily budget.");
+            return;
+        }
         onSave({
             category: form.category,
             amount: Number(form.amount),
             spent: form.spent !== "" ? Number(form.spent) : undefined,
+            duration: Number(form.duration),
+            durationType: form.durationType,
+            day: form.durationType === "day" ? form.day : undefined,
         });
-        setForm({ category: "", amount: "", spent: "" });
+        setForm({
+            category: "",
+            amount: "",
+            spent: "",
+            duration: 1,
+            durationType: "month",
+            day: "",
+        });
     };
 
     return (
@@ -44,11 +83,17 @@ export default function AddBudgetDialog({ open, setOpen, onSave, initialBudget }
                         <Label className="text-white/80 mb-1">Category</Label>
                         <Input
                             name="category"
-                            placeholder="e.g. Food, Rent, Shopping"
+                            placeholder="Select or type category"
+                            list="budget-categories"
                             value={form.category}
                             onChange={handleChange}
                             className="bg-black/40 border-white/20 text-white mt-2"
                         />
+                        <datalist id="budget-categories">
+                            {Object.keys(budgetImages).filter(c => c !== "default").map((category) => (
+                                <option key={category} value={category} />
+                            ))}
+                        </datalist>
                     </div>
                     <div>
                         <Label className="text-white/80">Amount (₹)</Label>
@@ -72,6 +117,44 @@ export default function AddBudgetDialog({ open, setOpen, onSave, initialBudget }
                             className="bg-black/40 border-white/20 text-white mt-2"
                         />
                     </div>
+                    <div>
+                        <Label className="text-white/80">Budget Type</Label>
+                        <select
+                            name="durationType"
+                            value={form.durationType}
+                            onChange={handleChange}
+                            className="bg-black/40 border-white/20 text-white mt-2 p-2 rounded"
+                        >
+                            <option value="month">Monthly Budget</option>
+                            <option value="day">Daily Budget</option>
+                        </select>
+                    </div>
+                    {form.durationType === "month" ? (
+                        <div>
+                            <Label className="text-white/80">Duration (months)</Label>
+                            <Input
+                                name="duration"
+                                type="number"
+                                min={1}
+                                max={12}
+                                value={form.duration}
+                                onChange={handleChange}
+                                className="bg-black/40 border-white/20 text-white mt-2"
+                            />
+                        </div>
+                    ) : (
+                        <div>
+                            <Label className="text-white/80">Date</Label>
+                            <Input
+                                name="day"
+                                type="date"
+                                value={form.day}
+                                onChange={handleChange}
+                                className="bg-black/40 border-white/20 text-white mt-2"
+                            />
+                        </div>
+                    )}
+                    {error && <p className="text-red-400 text-sm">{error}</p>}
                     <Button
                         onClick={handleSubmit}
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white"

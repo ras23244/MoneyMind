@@ -6,8 +6,6 @@ export const useTransactionTrends = (userId, range = 30) => {
         queryKey: ["transactionTrends", userId, range],
         enabled: !!userId,
         queryFn: async () => {
-            console.log("🚀 [QUERY] Fetching transaction trends for userId:", userId, "range:", range);
-
             const res = await axios.get(
                 `${import.meta.env.VITE_BASE_URL}transactions/trends`,
                 {
@@ -15,13 +13,13 @@ export const useTransactionTrends = (userId, range = 30) => {
                     headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
                 }
             );
-
-            console.log("📦 [QUERY SUCCESS] Trends data received:", res.data);
             return res.data;
         },
-        refetchOnWindowFocus: true,
-        refetchOnMount: true,
-        refetchOnReconnect: true,
+        // 🚀 Set data as fresh for 10 minutes (trends change less frequently)
+        staleTime: 10 * 60 * 1000,
+        refetchOnWindowFocus: false,
+        refetchOnMount: false,
+        refetchOnReconnect: false,
         onError: (err) => console.error("❌ [QUERY ERROR trends]:", err),
     });
 };

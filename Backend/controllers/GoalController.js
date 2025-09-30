@@ -6,6 +6,7 @@ const { validationResult } = require("express-validator");
 exports.getGoals = async (req, res) => {
     try {
         const goals = await Goal.find({ userId: req.user.id });
+        console.log("goals from backend",goals)
         res.status(200).json({ success: true, data: goals });
 
     } catch (err) {
@@ -16,7 +17,7 @@ exports.getGoals = async (req, res) => {
 
 exports.createGoal = async (req, res) => {
     try {
-        const { title, description, targetAmount, currentAmount, startDate, endDate } = req.body;
+        const { title, description, targetAmount, currentAmount, startDate, endDate, priority } = req.body;
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ success: false, errors: errors.array() });
@@ -43,12 +44,55 @@ exports.createGoal = async (req, res) => {
             targetAmount,
             currentAmount: currentAmount || 0,
             startDate,
-            endDate
+            endDate,
+            priority: priority || 1,
         });
+        console.log("goal from backend",newGoal)
         await newGoal.save();
         res.status(201).json({ success: true, data: newGoal });
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ success: false, error: err.message });
+        
+    }
+}
+
+
+exports.updateGoal = async (req, res) => {
+    try {
+        const {id } = req.params;
+        const updates = req.body;
+     
+        const goal = await Goal.findOneAndUpdate(
+            { _id: id, userId: req.user.id },
+            updates,
+            { new: true, runValidators: true }
+        );
+
+        if (!goal) {
+            return res.status(404).json({ success: false, error: "Goal not found" });
+        }
+
+        res.status(200).json({ success: true, data: goal });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
         console.error(err);
     }
-}
+};
+
+
+exports.deleteGoal = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const goal = await Goal.findOneAndDelete({ _id: id, userId: req.user.id });
+
+        if (!goal) {
+            return res.status(404).json({ success: false, error: "Goal not found" });
+        }
+
+        res.status(200).json({ success: true, message: "Goal deleted successfully" });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+        console.error(err);
+    }
+};

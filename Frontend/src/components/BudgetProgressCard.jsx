@@ -1,7 +1,13 @@
 import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
+import { MoreVertical } from "lucide-react";
+import {
+    DropdownMenu,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import AddBudgetDialog from "./AddBudgetDialog";
 import BudgetTransactionsDialog from "./BudgetTransactionsDialog";
 
@@ -11,84 +17,99 @@ export default function BudgetProgressCard({ budget, onUpdate, onDelete, transac
 
     // Calculate percent safely
     const percent = budget.amount > 0 ? (budget.spent / budget.amount) * 100 : 0;
+    const safePercent = Math.min(percent, 100);
+
     let barColor = "bg-green-500";
     if (percent >= 80 && percent < 100) barColor = "bg-yellow-500";
     if (percent >= 100) barColor = "bg-red-600";
-    console.log("transacton from budpc", transactions || []);
 
     // Filter transactions for this budget
     const budgetTxs = transactions.filter(
-        tx =>
+        (tx) =>
             tx.type === "expense" &&
             (tx.category === budget.category || tx.tags.includes(budget.category))
     );
 
     return (
-        <Card className="bg-card-dark border border-white/10 group relative">
+        <Card className="bg-[#1f1d1f] border border-white/10 shadow-lg rounded-2xl hover:bg-white/10 relative">
             <CardHeader>
                 <CardTitle className="text-white flex items-center justify-between">
-                    {budget.category}
-                    <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-blue-400 ml-2"
-                        onClick={() => setShowDetails(true)}
-                        title="View Details"
-                    >
-                        <span className="underline">Details</span>
-                    </Button>
+                    <span className="truncate">{budget.category}</span>
+
+                    {/* Dropdown Menu (3 dots) */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button className="p-1 rounded-full hover:bg-white/10">
+                                <MoreVertical className="w-5 h-5 text-white" />
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="bg-[#242124] border border-white/10 text-gray-300 rounded-xl shadow-lg py-2">
+                            <DropdownMenuItem
+                                className="hover:bg-white/10 rounded-xl"
+                                onClick={() => setShowDetails(true)}
+                            >
+                                View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                className="hover:bg-white/10 rounded-xl"
+                                onClick={() => setOpenEdit(true)}
+                            >
+                                Edit Budget
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                className="hover:bg-white/10 rounded-xl text-red-400"
+                                onClick={onDelete}
+                            >
+                                Delete Budget
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </CardTitle>
             </CardHeader>
-            <CardContent>
-                <div className="flex justify-between text-sm text-white/70 mb-2">
-                    <span>₹{budget.spent.toLocaleString("en-IN")} spent</span>
-                    <span>₹{budget.amount.toLocaleString("en-IN")}</span>
-                </div>
-                <Progress
-                    value={percent > 100 ? 100 : percent}
-                    className={`h-3 bg-gray-700 
-                            ${percent >= 100 ? "[&>div]:bg-red-600" :
-                            percent >= 80 ? "[&>div]:bg-yellow-500" :
-                                "[&>div]:bg-green-500"}`}
 
-                />
+            <CardContent className="space-y-4">
+                {/* Progress Bar */}
+                <div>
+                    <div className="flex justify-between text-xs mb-1">
+                        <span className="text-white/60">Progress</span>
+                        <span className="text-white font-medium">{Math.round(percent)}%</span>
+                    </div>
+                    <div className="w-full bg-white/10 h-3 rounded-full overflow-hidden">
+                        <div
+                            className={`h-full ${barColor} transition-all duration-500`}
+                            style={{ width: `${safePercent}%` }}
+                        />
+                    </div>
+                </div>
+
+                {/* Amounts */}
+                <div className="flex justify-between text-sm font-medium">
+                    <span className="text-green-400">₹{budget.spent.toLocaleString("en-IN")}</span>
+                    <span className="text-white/70">₹{budget.amount.toLocaleString("en-IN")}</span>
+                </div>
+
+                {/* Warning */}
                 {percent >= 100 && (
                     <p className="text-red-400 text-xs mt-2">Budget exceeded!</p>
                 )}
-                <div className="flex gap-2 mt-2">
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-white border-white/30"
-                        onClick={() => setOpenEdit(true)}
-                    >
-                        Edit
-                    </Button>
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-red-400 border-white/30"
-                        onClick={onDelete}
-                    >
-                        Delete
-                    </Button>
-                </div>
-                <AddBudgetDialog
-                    open={openEdit}
-                    setOpen={setOpenEdit}
-                    onSave={(updatedBudget) => {
-                        onUpdate(updatedBudget);
-                        setOpenEdit(false);
-                    }}
-                    initialBudget={budget}
-                />
-                <BudgetTransactionsDialog
-                    open={showDetails}
-                    setOpen={setShowDetails}
-                    transactions={budgetTxs}
-                    category={budget.category}
-                />
             </CardContent>
+
+            {/* Modals */}
+            <AddBudgetDialog
+                open={openEdit}
+                setOpen={setOpenEdit}
+                onSave={(updatedBudget) => {
+                    onUpdate(updatedBudget);
+                    setOpenEdit(false);
+                }}
+                initialBudget={budget}
+            />
+            <BudgetTransactionsDialog
+                open={showDetails}
+                setOpen={setShowDetails}
+                transactions={budgetTxs}
+                category={budget.category}
+            />
         </Card>
     );
 }

@@ -1,22 +1,22 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
-export const useBudgets = (userId) => { 
+export const useAccounts = (userId)=>{
     const token = localStorage.getItem("token");
-
     return useQuery({
-        queryKey: ["budgets", userId],
+        queryKey: ["accounts", userId],
         enabled: !!userId,
         queryFn: async () => {
             const res = await axios.get(
-                `${import.meta.env.VITE_BASE_URL}budgets/get-budgets`,
+                `${import.meta.env.VITE_BASE_URL}account/get-accounts`,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-            return res.data.data || [];
+            console.log("Fetched accounts:", res.data);
+            return res.data || [];
         },
-        staleTime: 10 * 60 * 1000,
+        staleTime: 5 * 60 * 1000,
         refetchOnWindowFocus: false,
         refetchOnMount: false,
         refetchOnReconnect: false,
     });
-};
+}

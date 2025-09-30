@@ -7,15 +7,17 @@ export const useDeleteTransaction = (userId) => {
 
     return useMutation({
         mutationFn: async (_id) => {
-            const res = await axios.delete(
+            await axios.delete(
                 `${import.meta.env.VITE_BASE_URL}transactions/delete-transaction/${_id}`,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-            return res.data;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["transactions", userId] });
             queryClient.invalidateQueries({ queryKey: ["transactionTrends", userId] });
+
+            // ✅ Invalidate Budgets on Transaction Delete
+            queryClient.invalidateQueries({ queryKey: ["budgets", userId] });
         },
     });
 };

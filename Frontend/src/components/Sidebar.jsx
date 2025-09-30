@@ -7,7 +7,7 @@ export default function Sidebar({ navigation, activeTab, setActiveTab, creditSco
     
 
     return (
-        <aside className="w-64 bg-card-dark border-r border-white/10 p-6 flex flex-col h-screen">
+        <aside className="w-64 bg-card-dark border-r border-white/10 p-6 flex flex-col h-screen sticky top-0">
             <div className="flex items-center gap-3 mb-8">
                 <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
                     <DollarSign className="w-6 h-6 text-black" />

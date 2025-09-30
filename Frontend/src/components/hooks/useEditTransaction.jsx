@@ -17,6 +17,9 @@ export const useEditTransaction = (userId) => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["transactions", userId] });
             queryClient.invalidateQueries({ queryKey: ["transactionTrends", userId] });
+
+            // ✅ Invalidate Budgets on Transaction Edit
+            queryClient.invalidateQueries({ queryKey: ["budgets", userId] });
         },
     });
 };

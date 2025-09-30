@@ -12,7 +12,7 @@ const goalSchema=new mongoose.Schema({
     },
     description: {
         type: String,
-        required: [true, 'Please add a description'],
+        
     },
     targetAmount: {
         type: Number,
@@ -29,6 +29,16 @@ const goalSchema=new mongoose.Schema({
     endDate: {
         type: Date,
         required: [true, 'Please add an end date'],
+    },
+    priority:{
+        type: Number,default:1
+    },
+    status:{    
+        type:String,
+        default: "active"
+    },
+    pauseUntil:{
+        type:Date
     },
     createdAt: {
         type: Date,

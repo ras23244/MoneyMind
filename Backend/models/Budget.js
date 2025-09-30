@@ -18,6 +18,9 @@ const budgetSchema = new mongoose.Schema({
         type: Number,
         required: true,
     },
+    duration: { type: Number },
+    durationType: { type: String, enum: ["month", "day"], default: "month" },
+    day: { type: String }, // e.g. "2025-09-28"
     month: { type: String, required: true },
     createdAt: {
         type: Date,

@@ -33,9 +33,7 @@ export default function BudgetStatus({ initialCategories }) {
 
     return (
         <div className="relative flex min-h-[28rem] w-full items-center justify-center overflow-clip">
-            <p className="absolute top-6 text-center text-xl font-black text-neutral-400 md:text-2xl z-20">
-                Your Budget Status
-            </p>
+
             {cards.map((cat, index) => (
                 <motion.div
                     key={cat.name}
@@ -66,9 +64,18 @@ export default function BudgetStatus({ initialCategories }) {
                             <p className="text-center text-sm text-neutral-500 mt-1">{cat.percentage}% used</p>
                         </div>
                         <div className="mt-2">
-                            <Progress value={cat.percentage} className="h-2 bg-neutral-200" />
+                            <Progress
+                                value={cat.percentage > 100 ? 100 : cat.percentage}
+                                className={`h-2 bg-gray-700 
+                                         ${cat.percentage > 90
+                                        ? "[&>div]:bg-red-600"
+                                        : cat.percentage >= 80 && cat.percentage <= 90
+                                            ? "[&>div]:bg-yellow-500"
+                                            : "[&>div]:bg-green-500"
+                                    }`}
+                            />
                             <p className="mt-2 text-sm text-center text-neutral-600 dark:text-neutral-400">
-                                ${cat.spent} of ${cat.budget}
+                                ₹{cat.spent} of ₹{cat.budget}
                             </p>
                         </div>
                     </div>
