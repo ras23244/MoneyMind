@@ -44,6 +44,7 @@ export default function FinanceDashboard() {
     const [showNotes, setShowNotes] = useState(false);
 
     // Get current month for budgets
+    const today = new Date().toISOString().split("T")[0];
     const month = new Date().toISOString().slice(0, 7);
     const { data: budgets = [] } = useBudgets(user?._id, month);
 
@@ -60,12 +61,14 @@ export default function FinanceDashboard() {
         percentage: budget.amount > 0 ? Math.round((budget.spent / budget.amount) * 100) : 0,
         spent: budget.spent,
         budget: budget.amount,
-        image: budgetImages[budget.category] || budgetImages["default"], // fallback image
+        image: budgetImages[budget.category] || budgetImages["default"], 
     }));
     
 
     // Filter daily budgets
-    const dailyBudgets = budgets.filter(b => b.durationType === "day");
+    const dailyBudgets = budgets.filter(
+        b => b.durationType === "day" && b.day === today
+    );
 
     // helper functions
     const formatCurrency = (amount) => {

@@ -3,8 +3,10 @@ import { DollarSign } from "lucide-react";
 import { useUser } from '../context/UserContext';
 
 export default function Sidebar({ navigation, activeTab, setActiveTab, creditScore }) {
-    const { user } = useUser();
-    
+    const { user,logout } = useUser();
+    const handleLogout = ()=>{
+        logout();
+    }
 
     return (
         <aside className="w-64 bg-card-dark border-r border-white/10 p-6 flex flex-col h-screen sticky top-0">
@@ -47,7 +49,9 @@ export default function Sidebar({ navigation, activeTab, setActiveTab, creditSco
                         <p className="text-white text-sm font-medium">
                             {user?.fullname?.firstname} {user?.fullname?.lastname}
                         </p>
-                        <p className="text-green-400 text-xs">Excellent</p>
+                        <button
+                        onClick={handleLogout}
+                        className="text-white/70 hover:text-red-500 mt-2 cursor-pointer">Logout</button>
                     </div>
                 </div>
             </div>
