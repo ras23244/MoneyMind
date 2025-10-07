@@ -8,11 +8,20 @@ import AddTransactionDialog from "./AddTransactionDialog";
 import { useEditTransaction } from "./hooks/useEditTransaction";
 import { useDeleteTransaction } from "./hooks/useDeleteTransaction";
 import TransactionDetailsPanel from "./TransactionDetailsPanel";
-
 import TransactionTrendsChart from "./TransactionTrendsChart";
 import TransactionCalendar from "./TransactionCalendar";
 import TransactionBreakdownChart from "./TransactionBreakdownChart";
 import TransactionsList from "./TransactionList";
+import { useTransactionBreakdown } from "./hooks/useTransactionBreakdown"; // ⬅️ New custom hook
+
+// Helper function for date comparison
+const isSameDay = (d1, d2) => {
+    return (
+        d1.getUTCFullYear() === d2.getUTCFullYear() &&
+        d1.getUTCMonth() === d2.getUTCMonth() &&
+        d1.getUTCDate() === d2.getUTCDate()
+    );
+};
 
 export default function TransactionsPanel({ selectedDate, setSelectedDate, formatCurrency }) {
     const [search, setSearch] = useState("");
@@ -41,93 +50,46 @@ export default function TransactionsPanel({ selectedDate, setSelectedDate, forma
         XLSX.writeFile(wb, "transactions.xlsx");
     };
 
-    // Edit + Delete
+    // Edit + Delete actions
     const handleEdit = (transaction) => {
-        setEditing(transaction);      // Set the transaction to edit
-        setOpenDialog(true);   
+        setEditing(transaction);
+        setOpenDialog(true);
     };
 
     const handleDelete = (_id) => {
         deleteTransactionMutation.mutate(_id);
     };
 
-    // 🔹 Filter transactions
+    // 🔹 Filter transactions using a memoized function
     const filteredTransactions = useMemo(() => {
         const dateToShow = selectedDate || new Date();
+        const searchLower = search.toLowerCase();
 
         return allTransactions.filter((t) => {
             const txDate = new Date(t.date);
-            const txYear = txDate.getUTCFullYear();
-            const txMonth = txDate.getUTCMonth();
-            const txDay = txDate.getUTCDate();
-
-            const selectedYear = dateToShow.getUTCFullYear();
-            const selectedMonth = dateToShow.getUTCMonth();
-            const selectedDay = dateToShow.getUTCDate();
-
-            const datesMatch = txYear === selectedYear && txMonth === selectedMonth && txDay === selectedDay;
+            const datesMatch = isSameDay(txDate, dateToShow);
 
             if (!search) return datesMatch;
 
             return (
                 datesMatch &&
-                (t.description.toLowerCase().includes(search.toLowerCase()) ||
-                    t.category.toLowerCase().includes(search.toLowerCase()))
+                (t.description.toLowerCase().includes(searchLower) ||
+                    t.category.toLowerCase().includes(searchLower))
             );
         });
     }, [search, allTransactions, selectedDate]);
 
-    // 🔹 Pie chart data
-    const { mainChartData, drilldownChartData } = useMemo(() => {
-        const tagsData = {};
+    // 🔹 Pie chart data using custom hook
+    const { mainChartData, drilldownChartData } = useTransactionBreakdown(allTransactions, selectedTag);
 
-        allTransactions.forEach((t) => {
-            if (t.type === "expense") {
-                // Use tags if available, otherwise fallback to category as a single-item array
-                const sourceTags = t.tags && t.tags.length > 0
-                    ? t.tags
-                    : [t.category];
+    // Consolidated loading and error state
+    if (trendsLoading || txLoading) {
+        return <p className="text-white">Loading financial data...</p>;
+    }
 
-                sourceTags.forEach((tag) => {
-                    const normalizedTag = tag.toLowerCase();
-                    tagsData[normalizedTag] = (tagsData[normalizedTag] || 0) + t.amount;
-                });
-            }
-        });
-
-        const mainChartData = Object.keys(tagsData).map((tag) => ({
-            name: tag,
-            value: tagsData[tag],
-        }));
-
-        // Drilldown chart
-        const drilldownData = {};
-        if (selectedTag) {
-            allTransactions.forEach((t) => {
-                if (t.type === "expense") {
-                    const sourceTags = t.tags && t.tags.length > 0
-                        ? t.tags
-                        : [t.category];
-
-                    if (sourceTags.map(tag => tag.toLowerCase()).includes(selectedTag)) {
-                        const breakdownKey = t.description || t.category || "Uncategorized";
-                        drilldownData[breakdownKey] = (drilldownData[breakdownKey] || 0) + t.amount;
-                    }
-                }
-            });
-        }
-
-        const drilldownChartData = Object.keys(drilldownData).map((key) => ({
-            name: key,
-            value: drilldownData[key],
-        }));
-
-        return { mainChartData, drilldownChartData };
-    }, [allTransactions, selectedTag]);
-
-
-    if (trendsLoading || txLoading) return <p className="text-white">Loading...</p>;
-    if (trendsError || txError) return <p className="text-red-500">Error loading transactions.</p>;
+    if (trendsError || txError) {
+        return <p className="text-red-500">Error loading data. Trends: {trendsError?.message}, Transactions: {txError?.message}</p>;
+    }
 
     return (
         <>
@@ -137,13 +99,17 @@ export default function TransactionsPanel({ selectedDate, setSelectedDate, forma
                 <TransactionCalendar selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
             </div>
 
-            {/* Pie Charts
-            <TransactionBreakdownChart
+            <hr className="my-6 border-t-2 border-gray-700" />
+
+            {/* Pie Charts */}
+            {/* <TransactionBreakdownChart
                 mainChartData={mainChartData}
                 drilldownChartData={drilldownChartData}
                 selectedTag={selectedTag}
                 setSelectedTag={setSelectedTag}
             /> */}
+
+            <hr className="my-6 border-t-2 border-gray-700" />
 
             {/* Transaction List */}
             <TransactionsList
@@ -155,8 +121,6 @@ export default function TransactionsPanel({ selectedDate, setSelectedDate, forma
                 setLimit={setLimit}
                 setSelectedTransaction={setSelectedTransaction}
                 formatCurrency={formatCurrency}
-                setEditing={setEditing}
-                setOpenDialog={setOpenDialog}
                 handleExport={handleExport}
                 handleDelete={handleDelete}
                 handleEdit={handleEdit}

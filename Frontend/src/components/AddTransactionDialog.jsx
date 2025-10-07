@@ -72,12 +72,16 @@ export default function AddTransactionDialog({ open, setOpen, userId, transactio
                 form,
                 {
                     onSuccess: (data) => {
-                        toast.success("Transaction updated successfully!");
+                        toast.success("Transaction updated successfully!",{
+                            autoClose: 3000
+                        });
                         if (onTransactionCreated) onTransactionCreated(data);
                         setOpen(false);
                     },
                     onError: (error) => {
-                        toast.error("Failed to update transaction. Please try again.");
+                        toast.error("Failed to update transaction. Please try again.",{
+                            autoClose: 5000
+                        });
                         console.error("Error updating transaction:", error.response?.data || error.message);
                     },
                     onSettled: () => setLoading(false),
