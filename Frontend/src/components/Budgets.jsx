@@ -14,6 +14,7 @@ import { useTransactions } from "./hooks/useTransactions";
 import BudgetsFilter from "./BudgetsFilter";
 import BudgetHistory from "./BudgetHistory";
 import DisposableIncomeChartModal from "./DisposableIncomeChartModal";
+import dayjs from "dayjs";
 
 export default function Budgets() {
     const scrollRef = useRef(null);
@@ -21,7 +22,20 @@ export default function Budgets() {
     const [atBottom, setAtBottom] = useState(false);
     const { user } = useUser();
 
-    const { data: budgets = [] } = useBudgets(user?._id);
+    // All filters are managed in a single state object.
+    const [filters, setFilters] = useState({
+        category: "",
+        minAmount: "",
+        maxAmount: "",
+        search: "",
+        duration: "",
+        month: "",
+        durationType: "",
+        status: "",
+    });
+
+    // Pass the filters directly to the useBudgets hook. React Query will handle refetching when filters change.
+    const { data: budgets = [] } = useBudgets(user?._id, filters);
     const { data: transactions = [] } = useTransactions(user?._id);
 
     const createBudgetMutation = useCreateBudget(user?._id);
@@ -30,78 +44,65 @@ export default function Budgets() {
 
     const [openDialog, setOpenDialog] = useState(false);
     const [showPieChart, setShowPieChart] = useState(false);
-    const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
-    const [filters, setFilters] = useState({ category: "", minAmount: "", maxAmount: "", search: "" });
+    // This state is now used only for the pie chart's month selection, not for filtering the main list.
+    const [selectedMonth, setSelectedMonth] = useState(dayjs().format("YYYY-MM"));
     const [showHistory, setShowHistory] = useState(false);
     const [showDisposableModal, setShowDisposableModal] = useState(false);
 
-    // Memoize constant date values to avoid re-creation
-    const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
-    const currentMonth = useMemo(() => new Date().toISOString().slice(0, 7), []);
-
-    // Memoized transaction lookup map for efficient lookups
-    const transactionsLookup = useMemo(() => {
-        const map = {};
-        for (const tx of transactions) {
-            if (tx.type !== "expense") continue;
-            const month = tx.date.slice(0, 7);
-            if (!map[month]) map[month] = [];
-            map[month].push(tx);
-        }
-        return map;
-    }, [transactions]);
-
-    // Memoized computation of budgets with spent amounts
+    // Memoized computation of budgets with spent amounts. This now operates on the already-filtered data from the backend.
     const budgetsWithSpent = useMemo(() => {
+        const transactionsLookup = transactions.reduce((map, tx) => {
+            if (tx.type === "expense") {
+                const month = tx.date?.slice(0, 7);
+                if (month) {
+                    if (!map[month]) map[month] = [];
+                    map[month].push(tx);
+                }
+            }
+            return map;
+        }, {});
+
         return budgets.map((budget) => {
             const relevantTxs = budget.durationType === "day"
-                ? transactions.filter(tx => tx.date === budget.day && (tx.category === budget.category || tx.tags.includes(budget.category)))
-                : (transactionsLookup[budget.month] || []).filter(tx => tx.category === budget.category || tx.tags.includes(budget.category));
+                ? transactions.filter(tx => tx.date === budget.day && (tx.category === budget.category))
+                : (transactionsLookup[budget.month] || []).filter(tx => tx.category === budget.category);
 
             const transactionSpent = relevantTxs.reduce((sum, tx) => sum + tx.amount, 0);
             const manualSpent = Number(budget.spent) || 0;
             return { ...budget, spent: transactionSpent + manualSpent };
         });
-    }, [budgets, transactions, transactionsLookup]);
+    }, [budgets, transactions]);
 
-    // Memoized separation of current vs history budgets
-    const { currentBudgets, historyBudgets } = useMemo(() => {
-        const curr = budgetsWithSpent.filter(b => b.durationType === "day" ? b.day === today : b.month === currentMonth);
-        const hist = budgetsWithSpent.filter(b => b.durationType === "day" ? b.day < today : b.month < currentMonth);
-        return { currentBudgets: curr, historyBudgets: hist };
-    }, [budgetsWithSpent, today, currentMonth]);
+    // This is the client-side filtering function, which now only handles criteria that the backend doesn't,
+    // like the 'status' which is a calculated value.
+    const applyClientSideFilters = useCallback(
+        (list) => {
+            return list.filter((budget) => {
+                const { status, minAmount, maxAmount } = filters;
 
-    // Memoized filtering logic using useCallback for function stability
-    const applyFilters = useCallback((list) => {
-        return list.filter((budget) => {
-            const { category, minAmount, maxAmount, search, durationType, duration, status } = filters;
-
-            if (category && budget.category !== category) return false;
-            if (durationType && budget.durationType !== durationType) return false;
-            if (duration && String(budget.duration) !== String(duration)) return false;
-            if (search && !budget.category.toLowerCase().includes(search.toLowerCase())) return false;
-
-            if (status) {
-                const utilization = budget.spent / budget.amount;
+                // Status filter (based on utilization)
+                const utilization = budget.amount ? budget.spent / budget.amount : 0;
                 if (status === "safe" && utilization >= 0.75) return false;
                 if (status === "near-limit" && (utilization < 0.75 || utilization > 1)) return false;
                 if (status === "exceeded" && utilization <= 1) return false;
-            }
-            if (minAmount && budget.amount < Number(minAmount)) return false;
-            if (maxAmount && budget.amount > Number(maxAmount)) return false;
 
-            return true;
-        });
-    }, [filters]);
+                // Amount filters (optional, can be done on backend for efficiency)
+                if (minAmount && budget.amount < Number(minAmount)) return false;
+                if (maxAmount && budget.amount > Number(maxAmount)) return false;
 
-    // Memoized filtered budget lists
-    const filteredCurrentBudgets = useMemo(() => applyFilters(currentBudgets), [currentBudgets, applyFilters]);
-    const filteredHistoryBudgets = useMemo(() => applyFilters(historyBudgets), [historyBudgets, applyFilters]);
+                return true;
+            });
+        },
+        [filters]
+    );
 
-    // Memoized monthly disposable income data for the chart
+    // This is the final list of budgets after both backend and frontend filtering.
+    const filteredBudgets = useMemo(() => applyClientSideFilters(budgetsWithSpent), [budgetsWithSpent, applyClientSideFilters]);
+
+    // Monthly disposable income data for the chart.
     const monthlyData = useMemo(() => {
-        const monthsSet = [...new Set(budgetsWithSpent.map(b => b.month))];
-        return monthsSet.map(m => {
+        const allMonths = [...new Set(budgetsWithSpent.map(b => b.month))].filter(Boolean).sort();
+        return allMonths.map(m => {
             const monthBudgets = budgetsWithSpent.filter(b => b.month === m);
             const budgetSum = monthBudgets.reduce((sum, b) => sum + b.amount, 0);
             const spentSum = monthBudgets.reduce((sum, b) => sum + b.spent, 0);
@@ -109,18 +110,16 @@ export default function Budgets() {
         });
     }, [budgetsWithSpent]);
 
-    // Memoized current month's disposable income
     const currentMonthDisposable = useMemo(() => {
+        const currentMonth = dayjs().format("YYYY-MM");
         return monthlyData.find(d => d.month === currentMonth)?.disposable || 0;
-    }, [monthlyData, currentMonth]);
+    }, [monthlyData]);
 
-    // Memoized lists for filters
-    const categories = useMemo(() => [...new Set(budgetsWithSpent.map(b => b.category))], [budgetsWithSpent]);
-    const months = useMemo(() => [...new Set(budgetsWithSpent.map(b => b.month))], [budgetsWithSpent]);
-    const durations = useMemo(() => [...new Set(budgetsWithSpent.map(b => b.duration))].sort((a, b) => a - b), [budgetsWithSpent]);
-    const durationTypes = useMemo(() => [...new Set(budgetsWithSpent.map(b => b.durationType))], [budgetsWithSpent]);
+    const categories = useMemo(() => [...new Set(budgets.map(b => b.category))].filter(Boolean), [budgets]);
+    const months = useMemo(() => [...new Set(budgets.map(b => b.month))].filter(Boolean), [budgets]);
+    const durations = useMemo(() => [...new Set(budgets.map(b => b.duration))].filter(d => d != null).sort((a, b) => a - b), [budgets]);
+    const durationTypes = useMemo(() => [...new Set(budgets.map(b => b.durationType))].filter(Boolean), [budgets]);
 
-    // Scroll handlers
     const handleScroll = () => {
         const el = scrollRef.current;
         if (!el) return;
@@ -149,17 +148,22 @@ export default function Budgets() {
     };
 
     const handleAddBudget = (newBudget) => {
-        createBudgetMutation.mutate({ ...newBudget, month: currentMonth });
+        createBudgetMutation.mutate({ ...newBudget, month: newBudget.month || dayjs().format("YYYY-MM") });
         setOpenDialog(false);
     };
 
     const handleUpdateBudget = (id, updatedBudget) => {
-        updateBudgetMutation.mutate({ id, ...updatedBudget, month: currentMonth });
+        updateBudgetMutation.mutate({ id, ...updatedBudget, month: updatedBudget.month || dayjs().format("YYYY-MM") });
     };
 
     const handleDeleteBudget = (id) => {
         deleteBudgetMutation.mutate(id);
     };
+
+    // The 'showHistory' state and related logic is now simplified.
+    // To show history, we simply set the duration filter.
+    // The previous 'filteredCurrentBudgets' and 'filteredHistoryBudgets' are no longer needed.
+    // The main filteredBudgets list will contain the correct data based on the filters.
 
     return (
         <div className="space-y-6">
@@ -173,16 +177,17 @@ export default function Budgets() {
                         onClick={() => setShowHistory(!showHistory)}
                         className="bg-gray-600 hover:bg-gray-700 text-white"
                     >
-                        {showHistory ? "Hide History" : "History"}
+                        {showHistory ? "Hide History" : "Show History"}
                     </Button>
                 </div>
             </div>
 
+            {/* Conditionally render content based on showHistory state */}
             {showHistory ? (
-                <BudgetHistory budgets={filteredHistoryBudgets} transactions={transactions} />
+                <BudgetHistory budgets={filteredBudgets} transactions={transactions} />
             ) : (
                 <>
-                    <MonthlyBudgetCard budgets={filteredCurrentBudgets} />
+                    <MonthlyBudgetCard budgets={filteredBudgets} />
 
                     <Card className="bg-card-dark border border-white/10">
                         <CardHeader>
@@ -263,18 +268,22 @@ export default function Budgets() {
                                 ref={scrollRef}
                                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-black/40"
                             >
-                                {filteredCurrentBudgets.map((budget, idx) => (
-                                    <BudgetProgressCard
-                                        key={budget._id || idx}
-                                        budget={budget}
-                                        onUpdate={(updatedBudget) => handleUpdateBudget(budget._id, updatedBudget)}
-                                        onDelete={() => handleDeleteBudget(budget._id)}
-                                        transactions={transactions || []}
-                                    />
-                                ))}
+                                {filteredBudgets.length > 0 ? (
+                                    filteredBudgets.map((budget, idx) => (
+                                        <BudgetProgressCard
+                                            key={budget._id || idx}
+                                            budget={budget}
+                                            onUpdate={(updatedBudget) => handleUpdateBudget(budget._id, updatedBudget)}
+                                            onDelete={() => handleDeleteBudget(budget._id)}
+                                            transactions={transactions || []}
+                                        />
+                                    ))
+                                ) : (
+                                    <p className="text-white/50 col-span-3 text-center">No budgets found matching the filters.</p>
+                                )}
                             </div>
 
-                            {filteredCurrentBudgets.length > 6 && (
+                            {filteredBudgets.length > 6 && (
                                 <div
                                     className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-white/50 animate-bounce text-2xl cursor-pointer select-none"
                                     onClick={handleScrollIndicatorClick}

@@ -24,11 +24,39 @@ export default function BudgetProgressCard({ budget, onUpdate, onDelete, transac
     if (percent >= 100) barColor = "bg-red-600";
 
     // Filter transactions for this budget
-    const budgetTxs = transactions.filter(
-        (tx) =>
-            tx.type === "expense" &&
-            (tx.category === budget.category || tx.tags.includes(budget.category))
-    );
+    const budgetTxs = transactions.filter((tx) => {
+        if (tx.type !== "expense") return false;
+
+        // Normalize categories to lowercase for case-insensitive comparison
+        const budgetCategory = budget.category?.toLowerCase();
+        const txCategory = tx.category?.toLowerCase();
+        const txTags = tx.tags?.map((tag) => tag.toLowerCase()) || [];
+
+        const matchesCategory =
+            txCategory === budgetCategory || txTags.includes(budgetCategory);
+
+        if (!matchesCategory) return false;
+
+        // Get transaction date
+        const txDate = new Date(tx.date || tx.createdAt);
+
+        // Compare based on duration type
+        if (budget.durationType === "day") {
+            // Compare YYYY-MM-DD
+            const txDay = txDate.toISOString().split("T")[0];
+            return txDay === budget.day;
+        }
+
+        if (budget.durationType === "month") {
+            // Compare YYYY-MM
+            const txMonth = txDate.toISOString().slice(0, 7);
+            return txMonth === budget.month;
+        }
+
+        // Default: not included
+        return false;
+    });
+
 
     return (
         <Card className="bg-[#1f1d1f] border border-white/10 shadow-lg rounded-2xl hover:bg-white/10 relative">
