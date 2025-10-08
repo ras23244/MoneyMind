@@ -1,6 +1,6 @@
-const express = require('express');
 const Transaction = require('../models/TransactionModel');
 const mongoose = require('mongoose');
+const dayjs = require('dayjs');
 
 exports.createTransaction = async (req, res) => {
     try {
@@ -191,3 +191,54 @@ exports.getTransactionTrends = async (req, res) => {
     }
 };
 
+
+
+exports.getFinancialSummary = async (req, res) => {
+    try {
+        const userId = req.user._id; // from auth middleware
+
+        // Get all transactions for this user
+        const transactions = await Transaction.find({ userId });
+
+        const now = dayjs();
+        const currentMonth = now.format("YYYY-MM");
+        const lastMonth = now.subtract(1, "month").format("YYYY-MM");
+
+        // Helper to sum transactions by type and month
+        const sumTransactions = (txs, month, type) =>
+            txs
+                .filter(
+                    (t) =>
+                        t.type.toLowerCase() === type.toLowerCase() &&
+                        dayjs(t.date).format("YYYY-MM") === month)
+                .reduce((acc, t) => acc + t.amount, 0);
+
+        const currentIncome = sumTransactions(transactions, currentMonth, "income");
+        const currentExpenses = sumTransactions(transactions, currentMonth, "expense");
+        const currentSavings = currentIncome - currentExpenses;
+
+        const lastIncome = sumTransactions(transactions, lastMonth, "income");
+        const lastExpenses = sumTransactions(transactions, lastMonth, "expense");
+        const lastSavings = lastIncome - lastExpenses;
+
+        const percentageChange = (current, previous) => {
+            if (!previous) return 0;
+            return ((current - previous) / previous) * 100;
+        };
+
+        const summary = {
+            totalBalance: currentSavings,
+            monthlyIncome: currentIncome,
+            monthlyExpenses: currentExpenses,
+            monthlySavings: currentSavings > 0 ? currentSavings : 0,
+            incomeChange: percentageChange(currentIncome, lastIncome),
+            expensesChange: percentageChange(currentExpenses, lastExpenses),
+            savingsChange: percentageChange(currentSavings, lastSavings),
+        };
+
+        return res.status(200).json({ success: true, data: summary });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ success: false, message: "Server error" });
+    }
+};

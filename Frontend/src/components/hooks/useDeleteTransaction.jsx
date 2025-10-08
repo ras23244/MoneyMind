@@ -13,6 +13,7 @@ export const useDeleteTransaction = (userId) => {
             );
         },
         onSuccess: () => {
+            queryClient.invalidateQueries(["financialSummary", userId]);
             queryClient.invalidateQueries({ queryKey: ["transactions", userId] });
             queryClient.invalidateQueries({ queryKey: ["transactionTrends", userId] });
 

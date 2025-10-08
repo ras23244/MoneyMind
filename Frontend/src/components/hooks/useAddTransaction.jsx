@@ -23,6 +23,7 @@ export const useAddTransaction = (userId) => {
             queryClient.invalidateQueries({ queryKey: ["budgets", userId] });
 
             // Refetch is optional, but ensures active components update immediately
+            queryClient.invalidateQueries(["financialSummary", userId]);
             queryClient.refetchQueries({ queryKey: ["transactions", userId], type: "active" });
             queryClient.refetchQueries({ queryKey: ["transactionTrends", userId], type: "active" });
         },

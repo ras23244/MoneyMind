@@ -15,4 +15,6 @@ router.get('/filter-transactions', protect, TransactionController.filterTransact
 
 router.get("/trends", protect, TransactionController.getTransactionTrends);
 
+router.get("/financial-summary", protect, TransactionController.getFinancialSummary);
+
 module.exports=router;

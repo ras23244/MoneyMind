@@ -4,7 +4,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, ArrowUpRight, ArrowDownRight, PiggyBank } from "lucide-react";
 
-export default function BalanceCards({ userData, isBalanceVisible, setIsBalanceVisible, formatCurrency }) {
+export default function BalanceCards({ financialSummary, isBalanceVisible, setIsBalanceVisible, formatCurrency }) {
+    if (!financialSummary) return null;
+
+    const formatPercentage = (val) => (val >= 0 ? `+${val.toFixed(1)}%` : `${val.toFixed(1)}%`);
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <Card className="bg-balance-card border border-white/10 shadow-elegant hover:bg-white/10">
@@ -13,7 +17,7 @@ export default function BalanceCards({ userData, isBalanceVisible, setIsBalanceV
                         <div>
                             <p className="text-balance-text text-sm">Total Balance</p>
                             <div className="flex items-center gap-2 mt-1">
-                                <h3 className="text-2xl font-bold text-white">{formatCurrency(userData.totalBalance)}</h3>
+                                <h3 className="text-2xl font-bold text-white">{formatCurrency(financialSummary.totalBalance)}</h3>
                                 <Button
                                     variant="ghost"
                                     size="sm"
@@ -34,8 +38,8 @@ export default function BalanceCards({ userData, isBalanceVisible, setIsBalanceV
                         <ArrowUpRight className="w-5 h-5 text-green-400" />
                         <span className="text-white/70 text-sm">Income</span>
                     </div>
-                    <p className="text-2xl font-bold text-green-400">{formatCurrency(userData.monthlyIncome)}</p>
-                    <p className="text-green-400/60 text-xs mt-1">+12.5% from last month</p>
+                    <p className="text-2xl font-bold text-green-400">{formatCurrency(financialSummary.monthlyIncome)}</p>
+                    <p className="text-green-400/60 text-xs mt-1">{formatPercentage(financialSummary.incomeChange)} from last month</p>
                 </CardContent>
             </Card>
 
@@ -45,8 +49,8 @@ export default function BalanceCards({ userData, isBalanceVisible, setIsBalanceV
                         <ArrowDownRight className="w-5 h-5 text-red-400" />
                         <span className="text-white/70 text-sm">Expenses</span>
                     </div>
-                    <p className="text-2xl font-bold text-red-400">{formatCurrency(userData.monthlyExpenses)}</p>
-                    <p className="text-red-400/60 text-xs mt-1">+8.2% from last month</p>
+                    <p className="text-2xl font-bold text-red-400">{formatCurrency(financialSummary.monthlyExpenses)}</p>
+                    <p className="text-red-400/60 text-xs mt-1">{formatPercentage(financialSummary.expensesChange)} from last month</p>
                 </CardContent>
             </Card>
 
@@ -56,8 +60,8 @@ export default function BalanceCards({ userData, isBalanceVisible, setIsBalanceV
                         <PiggyBank className="w-5 h-5 text-blue-400" />
                         <span className="text-white/70 text-sm">Savings</span>
                     </div>
-                    <p className="text-2xl font-bold text-blue-400">{formatCurrency(userData.monthlySavings)}</p>
-                    <p className="text-blue-400/60 text-xs mt-1">+15.3% from last month</p>
+                    <p className="text-2xl font-bold text-blue-400">{formatCurrency(financialSummary.monthlySavings)}</p>
+                    <p className="text-blue-400/60 text-xs mt-1">{formatPercentage(financialSummary.savingsChange)} from last month</p>
                 </CardContent>
             </Card>
         </div>

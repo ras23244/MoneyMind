@@ -21,6 +21,7 @@ const budgetImages = {
     fitness: "/images/fitness.jpg",
     gym: "/images/gym.jpg",
     essentials: "/images/essentials.jpg",
+    salary: "/images/salary.jpg",
     default: "/images/default.jpg"
 };
 export default budgetImages;

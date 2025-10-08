@@ -160,7 +160,7 @@ export default function Budgets() {
         deleteBudgetMutation.mutate(id);
     };
 
-    // The 'showHistory' state and related logic is now simplified.
+    
     // To show history, we simply set the duration filter.
     // The previous 'filteredCurrentBudgets' and 'filteredHistoryBudgets' are no longer needed.
     // The main filteredBudgets list will contain the correct data based on the filters.

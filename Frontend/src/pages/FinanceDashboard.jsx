@@ -6,7 +6,6 @@ import BudgetStatus from "../components/BudgetStatus";
 import ConnectedAccounts from "../components/ConnectedAccounts";
 import GoalsPanel from "../components/GoalsPanel";
 import TransactionsPanel from "../components/TransactionsPanel";
-import { userData, transactionTrendData, financialGoals, connectedBanks } from "@/data/financeData";
 import { Button } from "@/components/ui/button";
 import { Bell, Plus, Home, Receipt, Target, Goal, BarChart3, Wallet } from "lucide-react";
 import { useUser } from '../context/UserContext';
@@ -22,6 +21,8 @@ import { BudgetProgressCircle } from "../components/Analytics";
 import NotesPanel from "../components/NotesPanel";
 import budgetImages from "../data/budgetImages";
 import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards";
+import { useFinancialSummary } from "../components/hooks/useFinancialSummary";
+import { transactionTrendData, financialGoals, connectedBanks } from "@/data/financeData";
 
 export default function FinanceDashboard() {
     const { user, loading } = useUser();
@@ -30,6 +31,7 @@ export default function FinanceDashboard() {
     // Fetch data using hooks
     const { data: budgets = [] } = useBudgets(user?._id);
     const { data: transactions = [], refetch: refetchTransactions } = useTransactions(user?._id);
+    const { data: financialSummary, isLoading } = useFinancialSummary(user?._id);
 
     // State for UI
     const [isBalanceVisible, setIsBalanceVisible] = useState(true);
@@ -107,7 +109,7 @@ export default function FinanceDashboard() {
 
     return (
         <div className="min-h-screen bg-background flex">
-            <Sidebar navigation={navigation} activeTab={activeTab} setActiveTab={setActiveTab} creditScore={userData.creditScore} />
+            <Sidebar navigation={navigation} activeTab={activeTab} setActiveTab={setActiveTab} />
             <main className="flex-1 p-6 overflow-y-auto">
                 <div className="max-w-7xl mx-auto">
                     {/* Header */}
@@ -126,11 +128,12 @@ export default function FinanceDashboard() {
                     {activeTab === "overview" && (
                         <div className="space-y-6">
                             <BalanceCards
-                                userData={userData}
+                                financialSummary={financialSummary}
                                 isBalanceVisible={isBalanceVisible}
                                 setIsBalanceVisible={setIsBalanceVisible}
                                 formatCurrency={formatCurrency}
                             />
+
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                 <div className="lg:col-span-2 space-y-6">
                                     {dailyBudgets.length > 0 ? (
