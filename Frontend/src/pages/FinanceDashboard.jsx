@@ -186,7 +186,7 @@ export default function FinanceDashboard() {
                                                 variant="outline"
                                                 onClick={() => setShowNotes((prev) => !prev)}
                                             >
-                                                {showNotes ? "Hide Notes" : "View Notes"}
+                                                {showNotes ? "Notes" : "Notes"}
                                             </Button>
                                         </div>
                                         {showNotes ? (

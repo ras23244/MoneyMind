@@ -17,15 +17,23 @@ export default function TransactionList({
     setSelectedTransaction,
     selectedDate,
 }) {
-
+    // You can remove this console.log if you don't need it for debugging
     console.log("selectedDate in TransactionList:", selectedDate);
+
+    // This line is corrected to avoid the timezone issue
+    const formattedDate = selectedDate ? new Date(selectedDate).toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    }) : '';
+
     return (
         <Card className="bg-card-dark border border-white/10 mt-6">
             <CardHeader>
                 <div className="flex items-center justify-between gap-3">
                     <div>
                         <CardTitle className="text-white">
-                            Transactions for {new Date(selectedDate).toISOString().split("T")[0]}
+                            Transactions for {formattedDate}
                         </CardTitle>
                         <p className="text-white/60 text-sm mt-1">
                             {transactions.length} transaction(s) found

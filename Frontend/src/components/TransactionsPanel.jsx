@@ -12,14 +12,15 @@ import TransactionTrendsChart from "./TransactionTrendsChart";
 import TransactionCalendar from "./TransactionCalendar";
 import TransactionBreakdownChart from "./TransactionBreakdownChart";
 import TransactionsList from "./TransactionList";
-import { useTransactionBreakdown } from "./hooks/useTransactionBreakdown"; // ⬅️ New custom hook
+import { useTransactionBreakdown } from "./hooks/useTransactionBreakdown";
 
 // Helper function for date comparison
+// CORRECTED: Use local time methods instead of UTC methods
 const isSameDay = (d1, d2) => {
     return (
-        d1.getUTCFullYear() === d2.getUTCFullYear() &&
-        d1.getUTCMonth() === d2.getUTCMonth() &&
-        d1.getUTCDate() === d2.getUTCDate()
+        d1.getFullYear() === d2.getFullYear() &&
+        d1.getMonth() === d2.getMonth() &&
+        d1.getDate() === d2.getDate()
     );
 };
 
