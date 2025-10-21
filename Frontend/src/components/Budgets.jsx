@@ -1,11 +1,21 @@
-// src/components/Budgets.jsx
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useUser } from "../context/UserContext";
 import { useBudgets } from "./hooks/useBudgets";
-import { useCreateBudget, useUpdateBudget, useDeleteBudget } from "./hooks/useBudgetMutations";
+import {
+    useCreateBudget,
+    useUpdateBudget,
+    useDeleteBudget,
+} from "./hooks/useBudgetMutations";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import {
+    PlusCircle,
+    History,
+    BarChart2,
+    PieChart,
+    XCircle,
+    RefreshCcw,
+} from "lucide-react";
 import AddBudgetDialog from "./AddBudgetDialog";
 import BudgetProgressCard from "./BudgetProgressCard";
 import BudgetBreakdownChart from "./BudgetBreakdownChart";
@@ -22,7 +32,6 @@ export default function Budgets() {
     const [atBottom, setAtBottom] = useState(false);
     const { user } = useUser();
 
-    // All filters are managed in a single state object.
     const [filters, setFilters] = useState({
         category: "",
         minAmount: "",
@@ -34,7 +43,6 @@ export default function Budgets() {
         status: "",
     });
 
-    // Pass the filters directly to the useBudgets hook. React Query will handle refetching when filters change.
     const { data: budgets = [] } = useBudgets(user?._id, filters);
     const { data: transactions = [] } = useTransactions(user?._id);
 
@@ -44,12 +52,10 @@ export default function Budgets() {
 
     const [openDialog, setOpenDialog] = useState(false);
     const [showPieChart, setShowPieChart] = useState(false);
-    // This state is now used only for the pie chart's month selection, not for filtering the main list.
     const [selectedMonth, setSelectedMonth] = useState(dayjs().format("YYYY-MM"));
     const [showHistory, setShowHistory] = useState(false);
     const [showDisposableModal, setShowDisposableModal] = useState(false);
 
-    // Memoized computation of budgets with spent amounts. This now operates on the already-filtered data from the backend.
     const budgetsWithSpent = useMemo(() => {
         const transactionsLookup = transactions.reduce((map, tx) => {
             if (tx.type === "expense") {
@@ -63,9 +69,14 @@ export default function Budgets() {
         }, {});
 
         return budgets.map((budget) => {
-            const relevantTxs = budget.durationType === "day"
-                ? transactions.filter(tx => tx.date === budget.day && (tx.category === budget.category))
-                : (transactionsLookup[budget.month] || []).filter(tx => tx.category === budget.category);
+            const relevantTxs =
+                budget.durationType === "day"
+                    ? transactions.filter(
+                        (tx) => tx.date === budget.day && tx.category === budget.category
+                    )
+                    : (transactionsLookup[budget.month] || []).filter(
+                        (tx) => tx.category === budget.category
+                    );
 
             const transactionSpent = relevantTxs.reduce((sum, tx) => sum + tx.amount, 0);
             const manualSpent = Number(budget.spent) || 0;
@@ -73,20 +84,16 @@ export default function Budgets() {
         });
     }, [budgets, transactions]);
 
-    // This is the client-side filtering function, which now only handles criteria that the backend doesn't,
-    // like the 'status' which is a calculated value.
     const applyClientSideFilters = useCallback(
         (list) => {
             return list.filter((budget) => {
                 const { status, minAmount, maxAmount } = filters;
-
-                // Status filter (based on utilization)
                 const utilization = budget.amount ? budget.spent / budget.amount : 0;
                 if (status === "safe" && utilization >= 0.75) return false;
-                if (status === "near-limit" && (utilization < 0.75 || utilization > 1)) return false;
+                if (status === "near-limit" && (utilization < 0.75 || utilization > 1))
+                    return false;
                 if (status === "exceeded" && utilization <= 1) return false;
 
-                // Amount filters (optional, can be done on backend for efficiency)
                 if (minAmount && budget.amount < Number(minAmount)) return false;
                 if (maxAmount && budget.amount > Number(maxAmount)) return false;
 
@@ -96,14 +103,17 @@ export default function Budgets() {
         [filters]
     );
 
-    // This is the final list of budgets after both backend and frontend filtering.
-    const filteredBudgets = useMemo(() => applyClientSideFilters(budgetsWithSpent), [budgetsWithSpent, applyClientSideFilters]);
+    const filteredBudgets = useMemo(
+        () => applyClientSideFilters(budgetsWithSpent),
+        [budgetsWithSpent, applyClientSideFilters]
+    );
 
-    // Monthly disposable income data for the chart.
     const monthlyData = useMemo(() => {
-        const allMonths = [...new Set(budgetsWithSpent.map(b => b.month))].filter(Boolean).sort();
-        return allMonths.map(m => {
-            const monthBudgets = budgetsWithSpent.filter(b => b.month === m);
+        const allMonths = [...new Set(budgetsWithSpent.map((b) => b.month))]
+            .filter(Boolean)
+            .sort();
+        return allMonths.map((m) => {
+            const monthBudgets = budgetsWithSpent.filter((b) => b.month === m);
             const budgetSum = monthBudgets.reduce((sum, b) => sum + b.amount, 0);
             const spentSum = monthBudgets.reduce((sum, b) => sum + b.spent, 0);
             return { month: m, disposable: budgetSum - spentSum };
@@ -112,13 +122,28 @@ export default function Budgets() {
 
     const currentMonthDisposable = useMemo(() => {
         const currentMonth = dayjs().format("YYYY-MM");
-        return monthlyData.find(d => d.month === currentMonth)?.disposable || 0;
+        return monthlyData.find((d) => d.month === currentMonth)?.disposable || 0;
     }, [monthlyData]);
 
-    const categories = useMemo(() => [...new Set(budgets.map(b => b.category))].filter(Boolean), [budgets]);
-    const months = useMemo(() => [...new Set(budgets.map(b => b.month))].filter(Boolean), [budgets]);
-    const durations = useMemo(() => [...new Set(budgets.map(b => b.duration))].filter(d => d != null).sort((a, b) => a - b), [budgets]);
-    const durationTypes = useMemo(() => [...new Set(budgets.map(b => b.durationType))].filter(Boolean), [budgets]);
+    const categories = useMemo(
+        () => [...new Set(budgets.map((b) => b.category))].filter(Boolean),
+        [budgets]
+    );
+    const months = useMemo(
+        () => [...new Set(budgets.map((b) => b.month))].filter(Boolean),
+        [budgets]
+    );
+    const durations = useMemo(
+        () =>
+            [...new Set(budgets.map((b) => b.duration))]
+                .filter((d) => d != null)
+                .sort((a, b) => a - b),
+        [budgets]
+    );
+    const durationTypes = useMemo(
+        () => [...new Set(budgets.map((b) => b.durationType))].filter(Boolean),
+        [budgets]
+    );
 
     const handleScroll = () => {
         const el = scrollRef.current;
@@ -138,60 +163,86 @@ export default function Budgets() {
     const handleScrollIndicatorClick = () => {
         const el = scrollRef.current;
         if (!el) return;
-        if (atTop) {
-            el.scrollBy({ top: 150, behavior: "smooth" });
-        } else if (atBottom) {
-            el.scrollBy({ top: -150, behavior: "smooth" });
-        } else {
-            el.scrollBy({ top: 150, behavior: "smooth" });
-        }
+        el.scrollBy({ top: atTop ? 150 : atBottom ? -150 : 150, behavior: "smooth" });
     };
 
     const handleAddBudget = (newBudget) => {
-        createBudgetMutation.mutate({ ...newBudget, month: newBudget.month || dayjs().format("YYYY-MM") });
+        createBudgetMutation.mutate({
+            ...newBudget,
+            month: newBudget.month || dayjs().format("YYYY-MM"),
+        });
         setOpenDialog(false);
     };
 
     const handleUpdateBudget = (id, updatedBudget) => {
-        updateBudgetMutation.mutate({ id, ...updatedBudget, month: updatedBudget.month || dayjs().format("YYYY-MM") });
+        updateBudgetMutation.mutate({
+            id,
+            ...updatedBudget,
+            month: updatedBudget.month || dayjs().format("YYYY-MM"),
+        });
     };
 
     const handleDeleteBudget = (id) => {
         deleteBudgetMutation.mutate(id);
     };
 
-    
-    // To show history, we simply set the duration filter.
-    // The previous 'filteredCurrentBudgets' and 'filteredHistoryBudgets' are no longer needed.
-    // The main filteredBudgets list will contain the correct data based on the filters.
+    const handleClearFilters = () => {
+        setFilters({
+            category: "",
+            minAmount: "",
+            maxAmount: "",
+            search: "",
+            duration: "",
+            month: "",
+            durationType: "",
+            status: "",
+        });
+    };
+
+    const chartBudgets = filteredBudgets.length > 0 ? filteredBudgets : budgetsWithSpent;
 
     return (
         <div className="space-y-6">
+            {/* Header */}
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-white">Budgets</h1>
+                <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                    <BarChart2 className="w-6 h-6 text-green-400" />
+                    Budgets
+                </h1>
                 <div className="flex gap-2">
-                    <Button onClick={() => setOpenDialog(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
-                        <PlusCircle className="w-4 h-4 mr-2" /> Add Budget
+                    <Button
+                        onClick={() => setOpenDialog(true)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                    
+                    >
+                        <PlusCircle className="w-5 h-5" />
                     </Button>
+
                     <Button
                         onClick={() => setShowHistory(!showHistory)}
                         className="bg-gray-600 hover:bg-gray-700 text-white"
                     >
-                        {showHistory ? "Hide History" : "Show History"}
+                        <History
+                            className={`w-5 h-5 ${showHistory ? "text-yellow-400" : "text-white"
+                                }`}
+                        />
                     </Button>
                 </div>
             </div>
 
-            {/* Conditionally render content based on showHistory state */}
             {showHistory ? (
                 <BudgetHistory budgets={filteredBudgets} transactions={transactions} />
             ) : (
                 <>
                     <MonthlyBudgetCard budgets={filteredBudgets} />
 
+                    {/* Disposable Income */}
                     <Card className="bg-card-dark border border-white/10">
                         <CardHeader>
-                            <CardTitle className="text-white">Disposable Income</CardTitle>
+                            <CardTitle className="text-white flex items-center gap-2">
+                                <BarChart2 className="w-5 h-5 text-green-400" />
+                                Disposable Income
+                            </CardTitle>
                         </CardHeader>
                         <CardContent>
                             <p className="text-2xl font-bold text-green-400">
@@ -219,7 +270,8 @@ export default function Budgets() {
                         />
                     )}
 
-                    <div className="flex justify-between items-center">
+                    {/* Filters + Action Buttons */}
+                    <div className="flex flex-wrap justify-between items-center gap-2">
                         <BudgetsFilter
                             filters={filters}
                             setFilters={setFilters}
@@ -228,16 +280,33 @@ export default function Budgets() {
                             durations={durations}
                             durationTypes={durationTypes}
                         />
-                        <Button
-                            onClick={() => setShowPieChart(!showPieChart)}
-                            className="bg-green-600 hover:bg-green-700 text-white"
-                        >
-                            {showPieChart ? "Hide Breakdown" : "Show Breakdown"}
-                        </Button>
+
+                        <div className="flex gap-2">
+                            <Button
+                                onClick={handleClearFilters}
+                                className="bg-gray-700 hover:bg-gray-800 text-white"
+                                title="Clear Filters"
+                            >
+                                <RefreshCcw className="w-5 h-5" />
+                            </Button>
+
+                            <Button
+                                onClick={() => setShowPieChart(!showPieChart)}
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                                title={showPieChart ? "Hide Breakdown" : "Show Breakdown"}
+                            >
+                                {showPieChart ? (
+                                    <XCircle className="w-5 h-5" />
+                                ) : (
+                                    <PieChart className="w-5 h-5" />
+                                )}
+                            </Button>
+                        </div>
                     </div>
 
+                    {/* Chart + Budgets */}
                     {showPieChart ? (
-                        <div className="flex flex-col lg:flex-row gap-6">
+                        <div className="flex flex-col lg:flex-row gap-6 transition-transform duration-300 ease-in-out">
                             <div className="flex-1">
                                 <div className="mb-4">
                                     <label className="text-white/80 mr-2">Select Month:</label>
@@ -248,22 +317,30 @@ export default function Budgets() {
                                         className="bg-black/40 border-white/20 text-white px-2 py-1 rounded"
                                     />
                                 </div>
-                                <BudgetBreakdownChart budgets={budgetsWithSpent.filter(b => b.month === selectedMonth)} />
+                                <BudgetBreakdownChart
+                                    budgets={chartBudgets.filter(
+                                        (b) => b.month === selectedMonth
+                                    )}
+                                />
                             </div>
                             <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {budgetsWithSpent.filter(b => b.month === selectedMonth).map((budget, idx) => (
-                                    <BudgetProgressCard
-                                        key={budget._id || idx}
-                                        budget={budget}
-                                        onUpdate={(updatedBudget) => handleUpdateBudget(budget._id, updatedBudget)}
-                                        onDelete={() => handleDeleteBudget(budget._id)}
-                                        transactions={transactions || []}
-                                    />
-                                ))}
+                                {chartBudgets
+                                    .filter((b) => b.month === selectedMonth)
+                                    .map((budget, idx) => (
+                                        <BudgetProgressCard
+                                            key={budget._id || idx}
+                                            budget={budget}
+                                            onUpdate={(updatedBudget) =>
+                                                handleUpdateBudget(budget._id, updatedBudget)
+                                            }
+                                            onDelete={() => handleDeleteBudget(budget._id)}
+                                            transactions={transactions || []}
+                                        />
+                                    ))}
                             </div>
                         </div>
                     ) : (
-                        <div className="relative">
+                        <div className="relative transition-all duration-300 ease-in-out">
                             <div
                                 ref={scrollRef}
                                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-black/40"
@@ -273,13 +350,17 @@ export default function Budgets() {
                                         <BudgetProgressCard
                                             key={budget._id || idx}
                                             budget={budget}
-                                            onUpdate={(updatedBudget) => handleUpdateBudget(budget._id, updatedBudget)}
+                                            onUpdate={(updatedBudget) =>
+                                                handleUpdateBudget(budget._id, updatedBudget)
+                                            }
                                             onDelete={() => handleDeleteBudget(budget._id)}
                                             transactions={transactions || []}
                                         />
                                     ))
                                 ) : (
-                                    <p className="text-white/50 col-span-3 text-center">No budgets found matching the filters.</p>
+                                    <p className="text-white/50 col-span-3 text-center">
+                                        No budgets found matching the filters.
+                                    </p>
                                 )}
                             </div>
 
@@ -296,7 +377,11 @@ export default function Budgets() {
                 </>
             )}
 
-            <AddBudgetDialog open={openDialog} setOpen={setOpenDialog} onSave={handleAddBudget} />
+            <AddBudgetDialog
+                open={openDialog}
+                setOpen={setOpenDialog}
+                onSave={handleAddBudget}
+            />
         </div>
     );
 }

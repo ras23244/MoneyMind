@@ -67,6 +67,23 @@ export default function BudgetsFilter({ filters, setFilters, categories = [], mo
                     <option key={d} value={d}>{d} {d === 1 ? "month" : "months"}</option>
                 ))}
             </select>
+            {/* Min Amount */}
+            <input
+                type="number"
+                placeholder="Min ₹"
+                value={filters.minAmount || ""}
+                onChange={(e) => setFilters({ ...filters, minAmount: e.target.value })}
+                className="p-2 w-24 rounded bg-[#1f1d1f] text-white border border-white/20"
+            />
+
+            {/* Max Amount */}
+            <input
+                type="number"
+                placeholder="Max ₹"
+                value={filters.maxAmount || ""}
+                onChange={(e) => setFilters({ ...filters, maxAmount: e.target.value })}
+                className="p-2 w-24 rounded bg-[#1f1d1f] text-white border border-white/20"
+            />
 
             {/* Search Box */}
             <input

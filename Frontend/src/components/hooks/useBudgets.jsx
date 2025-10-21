@@ -22,5 +22,8 @@ export const useBudgets = (userId, filters) => {
         refetchOnWindowFocus: false,
         refetchOnMount: false,
         refetchOnReconnect: false,
+
+        keepPreviousData: true,
+        placeholderData: (prev) => prev,
     });
 };

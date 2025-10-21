@@ -3,16 +3,18 @@ const Transaction = require('../models/TransactionModel');
 
 exports.getBudgets = async (req, res) => {
     try {
-        const { duration, month, durationType } = req.query;
+        const { category, month, duration, durationType, search, minAmount, maxAmount } = req.query;
         const userId = req.user.id;
-        let filter = { userId: userId };
 
-        // Handle month filter
-        if (month) {
-            filter.month = month;
-        }
+        let filter = { userId };
 
-        // Handle duration filter
+        // Category filter
+        if (category) filter.category = category;
+
+        // Month filter (e.g. "2025-09")
+        if (month) filter.month = month;
+
+        // Duration filter (e.g. "1", "3", "6" months)
         if (duration) {
             const months = parseInt(duration, 10);
             const cutoff = new Date();
@@ -20,45 +22,53 @@ exports.getBudgets = async (req, res) => {
             filter.createdAt = { $gte: cutoff };
         }
 
-        // Handle duration type filter
-        if (durationType) {
-            filter.durationType = durationType;
+        // Duration Type filter ("month" or "day")
+        if (durationType) filter.durationType = durationType;
+
+        // Amount range filter
+        if (minAmount || maxAmount) {
+            filter.amount = {};
+            if (minAmount) filter.amount.$gte = Number(minAmount);
+            if (maxAmount) filter.amount.$lte = Number(maxAmount);
         }
 
-        // Fetch budgets based on applied filters
-        const budgets = await Budget.find(filter);
+        // Search filter (case-insensitive search on category)
+        if (search) {
+            filter.category = { $regex: new RegExp(search, "i") };
+        }
 
-        // Calculate spent for each budget
+        // Fetch budgets
+        const budgets = await Budget.find(filter).sort({ createdAt: -1 });
+
+        // Compute 'spent' dynamically if not stored
         const budgetsWithSpent = await Promise.all(
             budgets.map(async (b) => {
-                if (!b.spent) {
-                    const match = {
-                        userId: userId,
-                        type: "expense",
-                        category: b.category,
+                const match = {
+                    userId,
+                    type: "expense",
+                    category: b.category,
+                };
+
+                if (b.durationType === "day") {
+                    const day = new Date(b.day);
+                    match.date = {
+                        $gte: new Date(day.setHours(0, 0, 0)),
+                        $lt: new Date(day.setHours(23, 59, 59)),
                     };
-
-                    // Set date range for transactions based on budget type
-                    if (b.durationType === "daily") {
-                        const budgetDay = new Date(b.day);
-                        match.date = {
-                            $gte: new Date(budgetDay.setHours(0, 0, 0)),
-                            $lt: new Date(budgetDay.setHours(23, 59, 59)),
-                        };
-                    } else { // 'monthly'
-                        const budgetMonth = new Date(`${b.month}-01`);
-                        match.date = {
-                            $gte: budgetMonth,
-                            $lt: new Date(budgetMonth.getFullYear(), budgetMonth.getMonth() + 1, 1),
-                        };
-                    }
-
-                    const spent = await Transaction.aggregate([
-                        { $match: match },
-                        { $group: { _id: null, total: { $sum: "$amount" } } },
-                    ]);
-                    b.spent = spent[0]?.total || 0;
+                } else {
+                    const monthStart = new Date(`${b.month}-01`);
+                    match.date = {
+                        $gte: monthStart,
+                        $lt: new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1),
+                    };
                 }
+
+                const spent = await Transaction.aggregate([
+                    { $match: match },
+                    { $group: { _id: null, total: { $sum: "$amount" } } },
+                ]);
+
+                b.spent = spent[0]?.total || b.spent || 0;
                 return b;
             })
         );
@@ -69,6 +79,7 @@ exports.getBudgets = async (req, res) => {
         res.status(500).json({ success: false, error: err.message });
     }
 };
+
 
 
 exports.createBudget = async (req, res) => {
