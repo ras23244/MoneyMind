@@ -23,6 +23,7 @@ import budgetImages from "../data/budgetImages";
 import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards";
 import { useFinancialSummary } from "../components/hooks/useFinancialSummary";
 import { transactionTrendData, financialGoals, connectedBanks } from "@/data/financeData";
+import Dashboard from "../components/Dashboard";
 
 export default function FinanceDashboard() {
     const { user, loading } = useUser();
@@ -125,7 +126,8 @@ export default function FinanceDashboard() {
                     </div>
 
                     {/* Overview */}
-                    {activeTab === "overview" && (
+                    {activeTab ==="overview" && <Dashboard/>}
+                    {/* {activeTab === "overview" && (
                         <div className="space-y-6">
                             <BalanceCards
                                 financialSummary={financialSummary}
@@ -214,7 +216,7 @@ export default function FinanceDashboard() {
                                 </div>
                             </div>
                         </div>
-                    )}
+                    )} */}
 
                     {activeTab === "accounts" && <Accounts connectedBanks={connectedBanks} />}
                     {activeTab === "goals" && <GoalsPanel formatCurrency={formatCurrency} financialGoals={financialGoals} />}

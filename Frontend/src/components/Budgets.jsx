@@ -1,21 +1,10 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useUser } from "../context/UserContext";
 import { useBudgets } from "./hooks/useBudgets";
-import {
-    useCreateBudget,
-    useUpdateBudget,
-    useDeleteBudget,
-} from "./hooks/useBudgetMutations";
+import { useCreateBudget, useUpdateBudget, useDeleteBudget } from "./hooks/useBudgetMutations";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-    PlusCircle,
-    History,
-    BarChart2,
-    PieChart,
-    XCircle,
-    RefreshCcw,
-} from "lucide-react";
+import { PlusCircle } from "lucide-react";
 import AddBudgetDialog from "./AddBudgetDialog";
 import BudgetProgressCard from "./BudgetProgressCard";
 import BudgetBreakdownChart from "./BudgetBreakdownChart";
@@ -88,6 +77,7 @@ export default function Budgets() {
         (list) => {
             return list.filter((budget) => {
                 const { status, minAmount, maxAmount } = filters;
+
                 const utilization = budget.amount ? budget.spent / budget.amount : 0;
                 if (status === "safe" && utilization >= 0.75) return false;
                 if (status === "near-limit" && (utilization < 0.75 || utilization > 1))
@@ -186,6 +176,7 @@ export default function Budgets() {
         deleteBudgetMutation.mutate(id);
     };
 
+    // 🔹 Clear all filters
     const handleClearFilters = () => {
         setFilters({
             category: "",
@@ -199,33 +190,25 @@ export default function Budgets() {
         });
     };
 
+    // 🔹 Decide what data pie chart should display (filtered vs all)
     const chartBudgets = filteredBudgets.length > 0 ? filteredBudgets : budgetsWithSpent;
 
     return (
         <div className="space-y-6">
-            {/* Header */}
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                    <BarChart2 className="w-6 h-6 text-green-400" />
-                    Budgets
-                </h1>
+                <h1 className="text-2xl font-bold text-white">Budgets</h1>
                 <div className="flex gap-2">
                     <Button
                         onClick={() => setOpenDialog(true)}
                         className="bg-blue-600 hover:bg-blue-700 text-white"
-                    
                     >
-                        <PlusCircle className="w-5 h-5" />
+                        <PlusCircle className="w-4 h-4 mr-2" /> Add Budget
                     </Button>
-
                     <Button
                         onClick={() => setShowHistory(!showHistory)}
                         className="bg-gray-600 hover:bg-gray-700 text-white"
                     >
-                        <History
-                            className={`w-5 h-5 ${showHistory ? "text-yellow-400" : "text-white"
-                                }`}
-                        />
+                        {showHistory ? "Hide History" : "Show History"}
                     </Button>
                 </div>
             </div>
@@ -236,13 +219,9 @@ export default function Budgets() {
                 <>
                     <MonthlyBudgetCard budgets={filteredBudgets} />
 
-                    {/* Disposable Income */}
                     <Card className="bg-card-dark border border-white/10">
                         <CardHeader>
-                            <CardTitle className="text-white flex items-center gap-2">
-                                <BarChart2 className="w-5 h-5 text-green-400" />
-                                Disposable Income
-                            </CardTitle>
+                            <CardTitle className="text-white">Disposable Income</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <p className="text-2xl font-bold text-green-400">
@@ -270,7 +249,6 @@ export default function Budgets() {
                         />
                     )}
 
-                    {/* Filters + Action Buttons */}
                     <div className="flex flex-wrap justify-between items-center gap-2">
                         <BudgetsFilter
                             filters={filters}
@@ -285,26 +263,18 @@ export default function Budgets() {
                             <Button
                                 onClick={handleClearFilters}
                                 className="bg-gray-700 hover:bg-gray-800 text-white"
-                                title="Clear Filters"
                             >
-                                <RefreshCcw className="w-5 h-5" />
+                                Clear Filters
                             </Button>
-
                             <Button
                                 onClick={() => setShowPieChart(!showPieChart)}
                                 className="bg-green-600 hover:bg-green-700 text-white"
-                                title={showPieChart ? "Hide Breakdown" : "Show Breakdown"}
                             >
-                                {showPieChart ? (
-                                    <XCircle className="w-5 h-5" />
-                                ) : (
-                                    <PieChart className="w-5 h-5" />
-                                )}
+                                {showPieChart ? "Hide Breakdown" : "Show Breakdown"}
                             </Button>
                         </div>
                     </div>
 
-                    {/* Chart + Budgets */}
                     {showPieChart ? (
                         <div className="flex flex-col lg:flex-row gap-6 transition-transform duration-300 ease-in-out">
                             <div className="flex-1">
