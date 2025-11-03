@@ -91,7 +91,7 @@ export default function Dashboard() {
             .slice(0, 6);
     }, [transactions, monthKey]);
 
-    
+
 
     // Trend data for last 6 months based on transactions
     const trendData = useMemo(() => {
@@ -219,7 +219,7 @@ export default function Dashboard() {
         createGoalMutation.mutate(
             {
                 ...goalData,
-                createdAt: dayjs().format(), 
+                createdAt: dayjs().format(),
             },
             {
                 onSuccess: () => {
@@ -273,8 +273,9 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* Charts + insights row */}
+            {/* Charts + insights row: 3 equal columns (Spending | Notes | Alerts) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+                {/* Spending by Category */}
                 <div className="bg-white/5 rounded-lg p-4 border border-white/6">
                     <h3 className="font-semibold mb-2">Spending by Category</h3>
                     <div style={{ width: '100%', height: 220 }}>
@@ -289,7 +290,6 @@ export default function Dashboard() {
                             </PieChart>
                         </ResponsiveContainer>
                     </div>
-
                     <div className="mt-3 grid grid-cols-1 gap-2">
                         {categoryBreakdown.map((c, i) => (
                             <div key={c.name} className="flex items-center justify-between">
@@ -306,49 +306,181 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                <div className="bg-white/5 rounded-lg p-4 border border-white/6 col-span-1 lg:col-span-2">
-                    <div className="bg-[#1e1e1e] rounded-2xl shadow p-4 flex flex-col h-[500px]">
-                        <div className="flex items-center justify-between mb-3">
-                            <h2 className="text-lg font-semibold">Insights</h2>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setShowNotes((prev) => !prev)}
-                            >
-                                {showNotes ? "Notes" : "Notes"}
-                            </Button>
-                        </div>
+                {/* Notes / Insights */}
+                <div className="bg-white/5 rounded-lg p-4 border border-white/6">
+                    <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-semibold">Notes & Insights</h3>
+                        <Button size="sm" variant="outline" onClick={() => setShowNotes((s) => !s)}>
+                            {showNotes ? "Hide" : "Notes"}
+                        </Button>
+                    </div>
+                    <div className="min-h-[220px]">
                         {showNotes ? (
                             <NotesPanel />
                         ) : (
-                            <div className="overflow-y-auto flex-1 pr-1">
-                                <ul className="space-y-2 text-sm">
-                                    <li className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
-                                        ⚠️ You’ve already spent 80% of your Food budget.
-                                    </li>
-                                    <li className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                                        🎉 You saved ₹10,000 this month – 20% more than usual!
-                                    </li>
-                                    <li className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
-                                        🔮 Forecast: You may overspend on Shopping next month.
-                                    </li>
-                                </ul>
+                            <div className="space-y-3 text-sm">
+                                {insights.length ? (
+                                    <ul className="list-disc list-inside text-slate-300">
+                                        {insights.map((ins, i) => <li key={i}>{ins}</li>)}
+                                    </ul>
+                                ) : (
+                                    <div className="text-slate-400">No insights currently. Check back later.</div>
+                                )}
                             </div>
                         )}
                     </div>
+                </div>
+
+                {/* Alerts (Upcoming bills, budget thresholds, goals, anomalies, reminders) */}
+                <div className="bg-white/5 rounded-lg p-4 border border-white/6">
+                    <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-semibold">Alerts</h3>
+                    </div>
+
+                    {/** build alerts from real data */}
+                    {(() => {
+                        const alerts = [];
+                        // Upcoming bills (next 7 days)
+                        (billsUi || []).forEach((b) => {
+                            if (!b.due) return;
+                            const days = dayjs(b.due).diff(dayjs(), 'day');
+                            if (days <= 7 && days >= 0) {
+                                alerts.push({
+                                    id: `bill-${b.id}`,
+                                    icon: '💳',
+                                    title: `${b.title}`,
+                                    text: `Due in ${days} day${days !== 1 ? 's' : ''} • ${currency(b.amount)}`,
+                                    priority: 'high',
+                                    color: 'bg-yellow-200 text-yellow-800',
+                                });
+                            }
+                        });
+
+                        // Budget threshold alerts
+                        (budgetsUi || []).forEach((b, idx) => {
+                            if (!b.limit || b.limit <= 0) return;
+                            const pct = (b.spent / b.limit) * 100;
+                            if (pct >= 100) {
+                                alerts.push({
+                                    id: `budget-exceeded-${idx}`,
+                                    icon: '💰',
+                                    title: `${b.name} budget exceeded`,
+                                    text: `${Math.round(pct)}% used (${currency(b.spent)} of ${currency(b.limit)})`,
+                                    priority: 'high',
+                                    color: 'bg-red-200 text-red-800',
+                                });
+                            } else if (pct >= 75) {
+                                alerts.push({
+                                    id: `budget-near-${idx}`,
+                                    icon: '💰',
+                                    title: `${b.name} near threshold`,
+                                    text: `${Math.round(pct)}% used`,
+                                    priority: 'medium',
+                                    color: 'bg-orange-100 text-orange-800',
+                                });
+                            }
+                        });
+
+                        // Goal milestones (>=75%)
+                        (goalsUi || []).forEach((g, idx) => {
+                            if (!g.target || g.target <= 0) return;
+                            const pct = (g.current / g.target) * 100;
+                            if (pct >= 75) {
+                                alerts.push({
+                                    id: `goal-${idx}`,
+                                    icon: '🎯',
+                                    title: `${g.name} reached ${Math.round(pct)}%`,
+                                    text: `${currency(g.current)} of ${currency(g.target)}`,
+                                    priority: 'positive',
+                                    color: 'bg-green-100 text-green-800',
+                                });
+                            }
+                        });
+
+                        // Simple spending anomaly: category spent >= 2x previous month
+                        const sumByMonth = (monthOffset = 0) => {
+                            const map = {};
+                            const target = dayjs().subtract(monthOffset, 'month').format('YYYY-MM');
+                            (transactions || []).forEach((t) => {
+                                if (!t.date || t.date.slice(0, 7) !== target) return;
+                                const key = t.category || 'Other';
+                                const amt = Number(t.amount || 0);
+                                map[key] = (map[key] || 0) + Math.abs(amt);
+                            });
+                            return map;
+                        };
+                        const current = sumByMonth(0);
+                        const prev = sumByMonth(1);
+                        Object.keys(current).forEach((cat) => {
+                            const cur = current[cat] || 0;
+                            const pv = prev[cat] || 0;
+                            if (pv > 0 && cur / pv >= 2) {
+                                alerts.push({
+                                    id: `anom-${cat}`,
+                                    icon: '⚠️',
+                                    title: `Spending anomaly: ${cat}`,
+                                    text: `Spent ${Math.round(cur / Math.max(1, pv))}× vs last month (${currency(cur)})`,
+                                    priority: 'high',
+                                    color: 'bg-orange-100 text-orange-800',
+                                });
+                            }
+                        });
+
+                        // Periodic & custom reminders from financialSummary.reminders
+                        (financialSummary.reminders || []).forEach((r, i) => {
+                            alerts.push({
+                                id: `rem-${i}`,
+                                icon: '🕒',
+                                title: r.title || 'Reminder',
+                                text: r.note || '',
+                                priority: 'low',
+                                color: 'bg-slate-100 text-slate-800',
+                            });
+                        });
+
+                        if (!alerts.length) {
+                            return <div className="text-slate-400">No alerts right now — your finances look stable.</div>;
+                        }
+
+                        // sort by priority (high -> medium -> positive -> low)
+                        const priorityOrder = { high: 0, medium: 1, positive: 2, low: 3 };
+                        alerts.sort((a, b) => (priorityOrder[a.priority] ?? 4) - (priorityOrder[b.priority] ?? 4));
+
+                        return (
+                            <div className="space-y-3">
+                                {alerts.map((al) => (
+                                    <div key={al.id} className="flex items-start gap-3 p-3 rounded border border-white/6 bg-white/2">
+                                        <div className="text-2xl leading-none">{al.icon}</div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center justify-between">
+                                                <div className="font-medium text-sm">{al.title}</div>
+                                                <div className={`text-xs px-2 py-0.5 rounded ${al.color}`}>{al.priority.toUpperCase()}</div>
+                                            </div>
+                                            <div className="text-xs text-slate-300 mt-1">{al.text}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        );
+                    })()}
                 </div>
             </div>
 
             {/* Middle row: Budgets, Goals, Accounts */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 {/* Budgets */}
-                <div className="bg-white/5 rounded-lg p-4 border border-white/6">
-                    <div className="flex items-center justify-between mb-3">
+                <div className="bg-white/5 rounded-lg p-4 border border-white/6 transition-shadow hover:shadow-lg">
+                    <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setBudgetsExpanded((s) => !s)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setBudgetsExpanded((s) => !s); } }}
+                        className="flex items-center justify-between mb-3 group cursor-pointer"
+                    >
                         <h3 className="font-semibold">Budgets</h3>
-                        <div className="mt-4 flex gap-2">
-                        
+                        <div className="mt-4 flex gap-2 items-center">
                             <Button
-                                onClick={() => setOpenBudgetDialog(true)}
+                                onClick={(e) => { e.stopPropagation(); setOpenBudgetDialog(true); }}
                                 className="text-sm px-3 py-2 bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
                             >
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
@@ -360,16 +492,15 @@ export default function Dashboard() {
                                         strokeLinejoin="round"
                                     />
                                 </svg>
-                                
                             </Button>
+                            
                         </div>
-
                     </div>
                     <div className="space-y-3">
                         {(budgetsExpanded ? budgetsUi : budgetsUi.slice(0, 3)).map((b) => {
                             const pct = Math.min(100, (b.spent / Math.max(1, b.limit)) * 100);
                             return (
-                                <div key={b.name}>
+                                <div key={b.name} className="transition-colors hover:bg-white/5 rounded p-2">
                                     <div className="flex justify-between items-center">
                                         <div>
                                             <div className="text-sm font-medium">{b.name}</div>
@@ -417,16 +548,22 @@ export default function Dashboard() {
                         )}
                     </div>
 
-                    
+
                 </div>
 
                 {/* Goals */}
-                <div className="bg-white/5 rounded-lg p-4 border border-white/6">
-                    <div className="flex items-center justify-between mb-3">
+                <div className="bg-white/5 rounded-lg p-4 border border-white/6 transition-shadow hover:shadow-lg">
+                    <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setGoalsExpanded((s) => !s)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setGoalsExpanded((s) => !s); } }}
+                        className="flex items-center justify-between mb-3 group cursor-pointer"
+                    >
                         <h3 className="font-semibold">Goals</h3>
-                        <div className="mt-4 flex gap-2">
+                        <div className="mt-4 flex gap-2 items-center">
                             <Button
-                                onClick={() => setOpenGoalDialog(true)}
+                                onClick={(e) => { e.stopPropagation(); setOpenGoalDialog(true); }}
                                 className="text-sm px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
                             >
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
@@ -438,15 +575,15 @@ export default function Dashboard() {
                                         strokeLinejoin="round"
                                     />
                                 </svg>
-                                
                             </Button>
+                            
                         </div>
                     </div>
                     <div className="space-y-3">
                         {(goalsExpanded ? goalsUi : goalsUi.slice(0, 3)).map((g) => {
                             const pct = Math.min(100, (g.current / Math.max(1, g.target)) * 100);
                             return (
-                                <div key={g.name}>
+                                <div key={g.name} className="transition-colors hover:bg-white/5 rounded p-2">
                                     <div className="flex justify-between">
                                         <div>
                                             <div className="text-sm font-medium">{g.name}</div>
@@ -494,18 +631,24 @@ export default function Dashboard() {
                         )}
                     </div>
 
-                    
+
                 </div>
 
                 {/* Accounts */}
-                <div className="bg-white/5 rounded-lg p-4 border border-white/6">
-                    <div className="flex items-center justify-between mb-3">
+                <div className="bg-white/5 rounded-lg p-4 border border-white/6 transition-shadow hover:shadow-lg">
+                    <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setAccountsExpanded((s) => !s)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setAccountsExpanded((s) => !s); } }}
+                        className="flex items-center justify-between mb-3 group cursor-pointer"
+                    >
                         <h3 className="font-semibold">Accounts</h3>
                         <div className="flex items-center gap-2">
-                            <button onClick={() => navigate('/accounts')} title="Manage accounts" className="p-1 rounded hover:bg-white/5">
+                            <button onClick={(e) => { e.stopPropagation(); navigate('/accounts'); }} title="Manage accounts" className="p-1 rounded hover:bg-white/5">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 12h18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
                             </button>
-                            <button onClick={() => setAccountsExpanded((s) => !s)} className="p-1 rounded hover:bg-white/5">
+                            <button onClick={(e) => { e.stopPropagation(); setAccountsExpanded((s) => !s); }} className="p-1 rounded hover:bg-white/5">
                                 {accountsExpanded ? (
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M18 15l-6-6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                                 ) : (
@@ -516,7 +659,7 @@ export default function Dashboard() {
                     </div>
                     <div className="space-y-3">
                         {(accountsExpanded ? accountsUi : accountsUi.slice(0, 3)).map((a) => (
-                            <div key={a.name} className="flex justify-between items-center">
+                            <div key={a.name} className="flex justify-between items-center transition-colors hover:bg-white/5 rounded p-2">
                                 <div>
                                     <div className="text-sm font-medium">{a.name}</div>
                                     <div className="text-xs text-slate-400">{a.type} • {a.lastSync}</div>
@@ -537,15 +680,21 @@ export default function Dashboard() {
 
             {/* Recent transactions + Upcoming bills + Heatmap + Insights */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-                <div className="lg:col-span-2 bg-white/5 rounded-lg p-4 border border-white/6">
-                    <div className="flex items-center justify-between mb-3">
+                <div className="lg:col-span-2 bg-white/5 rounded-lg p-4 border border-white/6 transition-shadow hover:shadow-lg">
+                    <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setTxExpanded((s) => !s)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setTxExpanded((s) => !s); } }}
+                        className="flex items-center justify-between mb-3 group cursor-pointer"
+                    >
                         <h3 className="font-semibold">Recent Transactions</h3>
                         <div className="flex items-center gap-3">
                             <div className="text-xs text-slate-400">{txExpanded ? `Showing ${transactions.length}` : 'Showing last 5'}</div>
-                            <button onClick={() => navigate('/transactions')} title="Open transactions" className="p-1 rounded hover:bg-white/5">
+                            <button onClick={(e) => { e.stopPropagation(); navigate('/transactions'); }} title="Open transactions" className="p-1 rounded hover:bg-white/5">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                             </button>
-                            <button onClick={() => setTxExpanded(s => !s)} className="p-1 rounded hover:bg-white/5">
+                            <button onClick={(e) => { e.stopPropagation(); setTxExpanded(s => !s); }} className="p-1 rounded hover:bg-white/5">
                                 {txExpanded ? (
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M18 15l-6-6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                                 ) : (
@@ -556,7 +705,7 @@ export default function Dashboard() {
                     </div>
                     <div className="space-y-3">
                         {(txExpanded ? transactions : transactions.slice(0, 5)).map((t) => (
-                            <div key={t._id || t.id} className="flex items-center justify-between p-3 bg-white/3 rounded">
+                            <div key={t._id || t.id} className="flex items-center justify-between p-3 bg-white/3 rounded transition-colors hover:bg-white/5">
                                 <div className="flex gap-3 items-center">
                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${Number(t.amount) >= 0 ? 'bg-emerald-500/20' : 'bg-red-500/20'}`}>
                                         <div className="text-sm">{(t.category || 'X')[0]}</div>
@@ -634,7 +783,7 @@ export default function Dashboard() {
 
         </div>
 
-        
+
     );
-    
+
 }
