@@ -1,12 +1,12 @@
-const express=require('express')
-const router=express.Router()
+const express = require('express')
+const router = express.Router()
 const protect = require('../middlewares/authMiddleware');
 const Transaction = require('../models/TransactionModel');
 const TransactionController = require('../controllers/TransactionController');
 
 router.post('/create-transaction', protect, TransactionController.createTransaction);
 router.get('/get-transactions', protect, TransactionController.getTransactions);
-router.get('/get-transaction/:id',protect,TransactionController.getTransactionById);
+router.get('/get-transaction/:id', protect, TransactionController.getTransactionById);
 router.put('/update-transaction/:id', protect, TransactionController.updateTransaction);
 router.delete('/delete-transaction/:id', protect, TransactionController.deleteTransaction);
 
@@ -17,4 +17,9 @@ router.get("/trends", protect, TransactionController.getTransactionTrends);
 
 router.get("/financial-summary", protect, TransactionController.getFinancialSummary);
 
-module.exports=router;
+// New aggregation endpoints
+router.get("/category-breakdown", protect, TransactionController.getCategoryBreakdown);
+router.get("/spending-heatmap", protect, TransactionController.getSpendingHeatmap);
+router.get("/trend-data", protect, TransactionController.getTrendData);
+
+module.exports = router;

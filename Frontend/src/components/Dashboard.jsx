@@ -16,7 +16,6 @@ import { useTransactions } from "./hooks/useTransactions";
 import { useBudgets } from "./hooks/useBudgets";
 import { useGoals } from "./hooks/useGoals";
 import { useAccounts } from "./hooks/useAccounts";
-import { useFinancialSummary } from "./hooks/useFinancialSummary";
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import AddBudgetDialog from "./AddBudgetDialog";
@@ -26,11 +25,19 @@ import { useCreateGoal } from "./hooks/useGoals";
 import dayjs from "dayjs";
 import NotesPanel from './NotesPanel';
 
+import CategoryBreakdown from './dashboard/CategoryBreakdown';
+import TransactionList from './dashboard/TransactionList';
+import BudgetsList from './dashboard/BudgetsList';
+import GoalsList from './dashboard/GoalsList';
+import {
+    useFinancialSummary,
+    useCategoryBreakdown,
+    useSpendingHeatmap,
+    useTrendData
+} from './hooks/useAggregatedData';
+
 const currency = (n) =>
     new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
-
-const percent = (n) => `${Math.round(n)}%`;
-const COLORS = ['#4ade80', '#60a5fa', '#f97316', '#f43f5e', '#a78bfa'];
 
 export default function Dashboard() {
     const { user, loading: userLoading } = useUser();
@@ -56,66 +63,32 @@ export default function Dashboard() {
     const { data: accounts = [], isLoading: accountsLoading } = useAccounts(user?._id);
     const { data: financialSummary = {}, isLoading: summaryLoading } = useFinancialSummary(user?._id);
 
-    const loading = userLoading || txLoading || budgetsLoading || goalsLoading || accountsLoading || summaryLoading;
+    // Optimized data fetching with backend aggregations
+    const { data: categoryBreakdownData = [], isLoading: categoryBreakdownLoading } = useCategoryBreakdown(user?._id);
+    const { data: spendingHeatmap = [], isLoading: spendingHeatmapLoading } = useSpendingHeatmap(user?._id);
+    const { data: monthlyTrends = [], isLoading: trendsLoading } = useTrendData(user?._id);
 
-    // current month key YYYY-MM
-    const monthKey = useMemo(() => new Date().toISOString().slice(0, 7), []);
+    const loading = userLoading || txLoading || budgetsLoading || goalsLoading ||
+        accountsLoading || summaryLoading || categoryBreakdownLoading ||
+        spendingHeatmapLoading || trendsLoading;
 
-    // Derived summary metrics (prefer backend summary, fallback to computed values)
-    const totalBalance = financialSummary.totalBalance ?? accounts.reduce((s, a) => s + (Number(a.balance) || 0), 0);
-    const monthlyIncome = financialSummary.monthlyIncome ?? transactions
-        .filter(t => t.date && t.date.slice(0, 7) === monthKey && Number(t.amount) > 0)
-        .reduce((s, t) => s + Number(t.amount || 0), 0);
-    const monthlyExpenses = financialSummary.monthlyExpenses ?? Math.abs(transactions
-        .filter(t => t.date && t.date.slice(0, 7) === monthKey && Number(t.amount) < 0)
-        .reduce((s, t) => s + Number(t.amount || 0), 0));
-    const monthlySavings = monthlyIncome - monthlyExpenses;
-    const disposableAfterBudgets = financialSummary.disposableAfterBudgets ?? (() => {
+    // Use backend-calculated metrics directly
+    const {
+        totalBalance = 0,
+        monthlyIncome = 0,
+        monthlyExpenses = 0,
+        monthlySavings = 0,
+        netWorth = totalBalance,
+    } = financialSummary;
+
+    const disposableAfterBudgets = useMemo(() => {
         const totalBudgetAmount = budgets.reduce((s, b) => s + (Number(b.amount) || 0), 0);
         return (monthlyIncome || 0) - totalBudgetAmount;
-    })();
-    const netWorth = financialSummary.netWorth ?? totalBalance;
+    }, [budgets, monthlyIncome]);
 
-    // Category breakdown (current month expenses)
-    const categoryBreakdown = useMemo(() => {
-        const map = {};
-        transactions.forEach((t) => {
-            if (!t.date || t.date.slice(0, 7) !== monthKey) return;
-            const amt = Number(t.amount || 0);
-            if (amt >= 0) return;
-            const key = t.category || 'Other';
-            map[key] = (map[key] || 0) + Math.abs(amt);
-        });
-        return Object.entries(map).map(([name, value]) => ({ name, value }))
-            .sort((a, b) => b.value - a.value)
-            .slice(0, 6);
-    }, [transactions, monthKey]);
-
-
-
-    // Trend data for last 6 months based on transactions
-    const trendData = useMemo(() => {
-        const monthMap = {};
-        const now = new Date();
-        for (let i = 5; i >= 0; i--) {
-            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const key = d.toISOString().slice(0, 7);
-            monthMap[key] = { income: 0, expenses: 0, label: d.toLocaleString('en-US', { month: 'short' }) };
-        }
-        transactions.forEach((t) => {
-            if (!t.date) return;
-            const key = t.date.slice(0, 7);
-            if (!monthMap[key]) return;
-            const amt = Number(t.amount || 0);
-            if (amt >= 0) monthMap[key].income += amt;
-            else monthMap[key].expenses += Math.abs(amt);
-        });
-        return Object.keys(monthMap).map(k => ({
-            month: monthMap[k].label,
-            income: Math.round(monthMap[k].income),
-            expenses: Math.round(monthMap[k].expenses)
-        }));
-    }, [transactions]);
+    // Use backend-calculated data directly
+    const categoryBreakdown = categoryBreakdownData;
+    const trendData = monthlyTrends;
 
     // Budgets UI mapping (use available spent/amount values)
     const budgetsUi = useMemo(() => budgets.map(b => ({
@@ -156,32 +129,8 @@ export default function Dashboard() {
     }, [financialSummary, transactions]);
 
     //
-    // Heatmap: last 28 days spends
-    const heatmap = useMemo(() => {
-        const days = {};
-        const today = new Date();
-        for (let i = 27; i >= 0; i--) {
-            const d = new Date(today);
-            d.setDate(today.getDate() - i);
-            days[d.toISOString().slice(0, 10)] = 0;
-        }
-        transactions.forEach((t) => {
-            if (!t.date) return;
-            const dateKey = t.date.slice(0, 10);
-            if (days.hasOwnProperty(dateKey)) days[dateKey] += Math.abs(Number(t.amount || 0));
-        });
-        const keys = Object.keys(days).sort(); // oldest -> newest
-        const weeks = [];
-        for (let w = 0; w < 4; w++) {
-            const week = [];
-            for (let d = 0; d < 7; d++) {
-                const idx = w * 7 + d;
-                week.push(Math.round(days[keys[idx]] || 0));
-            }
-            weeks.push(week);
-        }
-        return weeks;
-    }, [transactions]);
+    // Use backend-calculated heatmap data
+    const heatmap = spendingHeatmap;
 
     // Insights simple rules
     const insights = useMemo(() => {
@@ -275,36 +224,10 @@ export default function Dashboard() {
 
             {/* Charts + insights row: 3 equal columns (Spending | Notes | Alerts) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-                {/* Spending by Category */}
-                <div className="bg-white/5 rounded-lg p-4 border border-white/6">
-                    <h3 className="font-semibold mb-2">Spending by Category</h3>
-                    <div style={{ width: '100%', height: 220 }}>
-                        <ResponsiveContainer>
-                            <PieChart>
-                                <Pie data={categoryBreakdown} dataKey="value" nameKey="name" outerRadius={70} innerRadius={40}>
-                                    {categoryBreakdown.map((entry, index) => (
-                                        <Cell key={`c-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip formatter={(v) => currency(v)} />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                    <div className="mt-3 grid grid-cols-1 gap-2">
-                        {categoryBreakdown.map((c, i) => (
-                            <div key={c.name} className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <span style={{ background: COLORS[i % COLORS.length] }} className="w-3 h-3 rounded-sm inline-block" />
-                                    <div>
-                                        <div className="text-sm font-medium">{c.name}</div>
-                                        <div className="text-xs text-slate-400">{percent((c.value / Math.max(1, monthlyExpenses)) * 100)}</div>
-                                    </div>
-                                </div>
-                                <div className="text-sm font-semibold">{currency(c.value)}</div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                <CategoryBreakdown
+                    categoryBreakdown={categoryBreakdown}
+                    monthlyExpenses={monthlyExpenses}
+                />
 
                 {/* Notes / Insights */}
                 <div className="bg-white/5 rounded-lg p-4 border border-white/6">
@@ -468,171 +391,19 @@ export default function Dashboard() {
 
             {/* Middle row: Budgets, Goals, Accounts */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                {/* Budgets */}
-                <div className="bg-white/5 rounded-lg p-4 border border-white/6 transition-shadow hover:shadow-lg">
-                    <div
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => setBudgetsExpanded((s) => !s)}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setBudgetsExpanded((s) => !s); } }}
-                        className="flex items-center justify-between mb-3 group cursor-pointer"
-                    >
-                        <h3 className="font-semibold">Budgets</h3>
-                        <div className="mt-4 flex gap-2 items-center">
-                            <Button
-                                onClick={(e) => { e.stopPropagation(); setOpenBudgetDialog(true); }}
-                                className="text-sm px-3 py-2 bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
-                            >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                                    <path
-                                        d="M12 5v14M5 12h14"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    />
-                                </svg>
-                            </Button>
-                            
-                        </div>
-                    </div>
-                    <div className="space-y-3">
-                        {(budgetsExpanded ? budgetsUi : budgetsUi.slice(0, 3)).map((b) => {
-                            const pct = Math.min(100, (b.spent / Math.max(1, b.limit)) * 100);
-                            return (
-                                <div key={b.name} className="transition-colors hover:bg-white/5 rounded p-2">
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <div className="text-sm font-medium">{b.name}</div>
-                                            <div className="text-xs text-slate-400">{currency(b.spent)} of {currency(b.limit)}</div>
-                                        </div>
-                                        <div className="text-sm font-semibold">{percent(pct)}</div>
-                                    </div>
-                                    <div className="w-full bg-white/10 h-2 rounded mt-2 overflow-hidden">
-                                        <div style={{ width: `${pct}%` }} className={`h-2 ${pct > 90 ? 'bg-red-500' : 'bg-emerald-400'}`} />
-                                    </div>
-                                </div>
-                            );
-                        })}
+                <BudgetsList
+                    budgets={budgetsUi}
+                    expanded={budgetsExpanded}
+                    onToggleExpand={() => setBudgetsExpanded(s => !s)}
+                    onAddBudget={() => setOpenBudgetDialog(true)}
+                />
 
-                        {/* Expand/Collapse Button */}
-                        {budgetsUi.length > 3 && (
-                            <div className="flex justify-center mt-3">
-                                <button
-                                    onClick={() => setBudgetsExpanded((s) => !s)}
-                                    className="p-1 rounded hover:bg-white/10 transition"
-                                >
-                                    {budgetsExpanded ? (
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                                            <path
-                                                d="M18 15l-6-6-6 6"
-                                                stroke="currentColor"
-                                                strokeWidth="2"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            />
-                                        </svg>
-                                    ) : (
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                                            <path
-                                                d="M6 9l6 6 6-6"
-                                                stroke="currentColor"
-                                                strokeWidth="2"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            />
-                                        </svg>
-                                    )}
-                                </button>
-                            </div>
-                        )}
-                    </div>
-
-
-                </div>
-
-                {/* Goals */}
-                <div className="bg-white/5 rounded-lg p-4 border border-white/6 transition-shadow hover:shadow-lg">
-                    <div
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => setGoalsExpanded((s) => !s)}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setGoalsExpanded((s) => !s); } }}
-                        className="flex items-center justify-between mb-3 group cursor-pointer"
-                    >
-                        <h3 className="font-semibold">Goals</h3>
-                        <div className="mt-4 flex gap-2 items-center">
-                            <Button
-                                onClick={(e) => { e.stopPropagation(); setOpenGoalDialog(true); }}
-                                className="text-sm px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
-                            >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                                    <path
-                                        d="M12 5v14M5 12h14"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    />
-                                </svg>
-                            </Button>
-                            
-                        </div>
-                    </div>
-                    <div className="space-y-3">
-                        {(goalsExpanded ? goalsUi : goalsUi.slice(0, 3)).map((g) => {
-                            const pct = Math.min(100, (g.current / Math.max(1, g.target)) * 100);
-                            return (
-                                <div key={g.name} className="transition-colors hover:bg-white/5 rounded p-2">
-                                    <div className="flex justify-between">
-                                        <div>
-                                            <div className="text-sm font-medium">{g.name}</div>
-                                            <div className="text-xs text-slate-400">{currency(g.current)} of {currency(g.target)}</div>
-                                        </div>
-                                        <div className="text-sm font-semibold">{percent(pct)}</div>
-                                    </div>
-                                    <div className="w-full bg-white/10 h-2 rounded mt-2 overflow-hidden">
-                                        <div style={{ width: `${pct}%` }} className="h-2 bg-blue-400" />
-                                    </div>
-                                </div>
-                            );
-                        })}
-
-                        {/* Expand/Collapse Button */}
-                        {goalsUi.length > 3 && (
-                            <div className="flex justify-center mt-3">
-                                <button
-                                    onClick={() => setGoalsExpanded((s) => !s)}
-                                    className="p-1 rounded hover:bg-white/10 transition"
-                                >
-                                    {goalsExpanded ? (
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                                            <path
-                                                d="M18 15l-6-6-6 6"
-                                                stroke="currentColor"
-                                                strokeWidth="2"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            />
-                                        </svg>
-                                    ) : (
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                                            <path
-                                                d="M6 9l6 6 6-6"
-                                                stroke="currentColor"
-                                                strokeWidth="2"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            />
-                                        </svg>
-                                    )}
-                                </button>
-                            </div>
-                        )}
-                    </div>
-
-
-                </div>
+                <GoalsList
+                    goals={goalsUi}
+                    expanded={goalsExpanded}
+                    onToggleExpand={() => setGoalsExpanded(s => !s)}
+                    onAddGoal={() => setOpenGoalDialog(true)}
+                />
 
                 {/* Accounts */}
                 <div className="bg-white/5 rounded-lg p-4 border border-white/6 transition-shadow hover:shadow-lg">
@@ -680,48 +451,12 @@ export default function Dashboard() {
 
             {/* Recent transactions + Upcoming bills + Heatmap + Insights */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-                <div className="lg:col-span-2 bg-white/5 rounded-lg p-4 border border-white/6 transition-shadow hover:shadow-lg">
-                    <div
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => setTxExpanded((s) => !s)}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setTxExpanded((s) => !s); } }}
-                        className="flex items-center justify-between mb-3 group cursor-pointer"
-                    >
-                        <h3 className="font-semibold">Recent Transactions</h3>
-                        <div className="flex items-center gap-3">
-                            <div className="text-xs text-slate-400">{txExpanded ? `Showing ${transactions.length}` : 'Showing last 5'}</div>
-                            <button onClick={(e) => { e.stopPropagation(); navigate('/transactions'); }} title="Open transactions" className="p-1 rounded hover:bg-white/5">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                            </button>
-                            <button onClick={(e) => { e.stopPropagation(); setTxExpanded(s => !s); }} className="p-1 rounded hover:bg-white/5">
-                                {txExpanded ? (
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M18 15l-6-6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                                ) : (
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                    <div className="space-y-3">
-                        {(txExpanded ? transactions : transactions.slice(0, 5)).map((t) => (
-                            <div key={t._id || t.id} className="flex items-center justify-between p-3 bg-white/3 rounded transition-colors hover:bg-white/5">
-                                <div className="flex gap-3 items-center">
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${Number(t.amount) >= 0 ? 'bg-emerald-500/20' : 'bg-red-500/20'}`}>
-                                        <div className="text-sm">{(t.category || 'X')[0]}</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-sm font-medium">{t.description || t.desc || t.note || t.title}</div>
-                                        <div className="text-xs text-slate-400">{(t.date || "").slice(0, 10)} • {t.account || t.bank || ''}</div>
-                                    </div>
-                                </div>
-                                <div className={`text-sm font-semibold ${Number(t.amount) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                    {Number(t.amount) >= 0 ? '+' : ''}{currency(Number(t.amount) || 0)}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                <TransactionList
+                    transactions={transactions}
+                    expanded={txExpanded}
+                    onToggleExpand={() => setTxExpanded(s => !s)}
+                    onNavigate={() => navigate('/transactions')}
+                />
 
                 <div className="bg-white/5 rounded-lg p-4 border border-white/6">
                     <h3 className="font-semibold mb-3">Upcoming Bills</h3>

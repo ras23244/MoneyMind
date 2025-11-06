@@ -4,8 +4,8 @@ const dayjs = require('dayjs');
 
 exports.createTransaction = async (req, res) => {
     try {
-        const { userId,bankAccountId, description, amount, type,date,note,category, tags } = req.body;
-       
+        const { userId, bankAccountId, description, amount, type, date, note, category, tags } = req.body;
+
 
         const newTransaction = await Transaction.create({
             userId,
@@ -24,7 +24,7 @@ exports.createTransaction = async (req, res) => {
             data: newTransaction
         });
     } catch (error) {
-     
+
         res.status(500).json({
             success: false,
             error: error.message
@@ -193,16 +193,176 @@ exports.getTransactionTrends = async (req, res) => {
 
 
 
+exports.getCategoryBreakdown = async (req, res) => {
+    try {
+        const userId = new mongoose.Types.ObjectId(req.user.id);
+        const { period = 'month' } = req.query;
+
+        let dateFilter = {};
+        const now = dayjs();
+
+        switch (period) {
+            case 'quarter':
+                dateFilter = { $gte: now.subtract(3, 'month').format('YYYY-MM-DD') };
+                break;
+            case 'year':
+                dateFilter = { $gte: now.subtract(1, 'year').format('YYYY-MM-DD') };
+                break;
+            default: // month
+                dateFilter = { $regex: `^${now.format('YYYY-MM')}` };
+        }
+
+        const categories = await Transaction.aggregate([
+            {
+                $match: {
+                    userId,
+                    date: dateFilter,
+                    type: 'expense'
+                }
+            },
+            {
+                $group: {
+                    _id: '$category',
+                    value: { $sum: '$amount' },
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $project: {
+                    name: { $ifNull: ['$_id', 'Other'] },
+                    value: { $abs: '$value' },
+                    count: 1,
+                    _id: 0
+                }
+            },
+            { $sort: { value: -1 } },
+            { $limit: 6 }
+        ]);
+
+        res.status(200).json({ success: true, data: categories });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+exports.getSpendingHeatmap = async (req, res) => {
+    try {
+        const userId = new mongoose.Types.ObjectId(req.user.id);
+        const startDate = dayjs().subtract(27, 'days').format('YYYY-MM-DD');
+
+        const dailySpending = await Transaction.aggregate([
+            {
+                $match: {
+                    userId,
+                    date: { $gte: startDate },
+                    type: 'expense'
+                }
+            },
+            {
+                $group: {
+                    _id: '$date',
+                    total: { $sum: '$amount' }
+                }
+            },
+            {
+                $project: {
+                    date: '$_id',
+                    total: { $abs: '$total' },
+                    _id: 0
+                }
+            },
+            { $sort: { date: 1 } }
+        ]);
+
+        // Convert to 4x7 matrix format
+        const heatmapData = Array(4).fill().map(() => Array(7).fill(0));
+        dailySpending.forEach(day => {
+            const date = dayjs(day.date);
+            const daysSince = dayjs().diff(date, 'day');
+            if (daysSince >= 0 && daysSince < 28) {
+                const week = Math.floor(daysSince / 7);
+                const dayOfWeek = date.day();
+                heatmapData[week][dayOfWeek] = Math.round(day.total);
+            }
+        });
+
+        res.status(200).json({ success: true, data: heatmapData });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+exports.getTrendData = async (req, res) => {
+    try {
+        const userId = new mongoose.Types.ObjectId(req.user.id);
+        const startDate = dayjs().subtract(5, 'months').startOf('month').format('YYYY-MM-DD');
+
+        const monthlyData = await Transaction.aggregate([
+            {
+                $match: {
+                    userId,
+                    date: { $gte: startDate }
+                }
+            },
+            {
+                $group: {
+                    _id: { $substr: ['$date', 0, 7] },
+                    income: {
+                        $sum: {
+                            $cond: [{ $eq: ['$type', 'income'] }, '$amount', 0]
+                        }
+                    },
+                    expenses: {
+                        $sum: {
+                            $cond: [{ $eq: ['$type', 'expense'] }, '$amount', 0]
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    month: '$_id',
+                    income: 1,
+                    expenses: { $abs: '$expenses' },
+                    _id: 0
+                }
+            },
+            { $sort: { month: 1 } }
+        ]);
+
+        // Ensure we have data for all 6 months
+        const trends = [];
+        for (let i = 5; i >= 0; i--) {
+            const monthKey = dayjs().subtract(i, 'month').format('YYYY-MM');
+            const monthData = monthlyData.find(m => m.month === monthKey) || { income: 0, expenses: 0 };
+            trends.push({
+                month: dayjs(monthKey).format('MMM'),
+                income: Math.round(monthData.income),
+                expenses: Math.round(monthData.expenses)
+            });
+        }
+
+        res.status(200).json({ success: true, data: trends });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
 exports.getFinancialSummary = async (req, res) => {
     try {
-        const userId = req.user._id; // from auth middleware
-
-        // Get all transactions for this user
-        const transactions = await Transaction.find({ userId });
-
+        const userId = new mongoose.Types.ObjectId(req.user.id); // from auth middleware
         const now = dayjs();
         const currentMonth = now.format("YYYY-MM");
         const lastMonth = now.subtract(1, "month").format("YYYY-MM");
+
+        // Get all transactions for the current and last month
+        const transactions = await Transaction.find({
+            userId,
+            date: {
+                $gte: now.subtract(1, "month").startOf("month").format("YYYY-MM-DD"),
+                $lte: now.endOf("month").format("YYYY-MM-DD")
+            }
+        });
 
         // Helper to sum transactions by type and month
         const sumTransactions = (txs, month, type) =>
