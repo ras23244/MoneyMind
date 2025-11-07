@@ -17,6 +17,7 @@ const accountRoutes = require('./routes/AccountRoutes');
 const budgetRoutes = require('./routes/BudgetRoutes');
 const goalRoutes = require('./routes/GoalRoutes');
 const noteRoutes = require('./routes/NoteRoutes');
+const billRoutes = require('./routes/BillRoutes');
 
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
@@ -81,6 +82,6 @@ app.use('/account', accountRoutes);
 app.use('/budgets',budgetRoutes);
 app.use('/goals', goalRoutes);
 app.use('/notes', noteRoutes);
-
+app.use('/bills', billRoutes);
 module.exports = app;
 

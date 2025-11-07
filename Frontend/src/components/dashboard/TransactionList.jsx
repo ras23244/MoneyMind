@@ -11,21 +11,12 @@ export default function TransactionList({ transactions, expanded, onToggleExpand
                 tabIndex={0}
                 onClick={onToggleExpand}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggleExpand(); } }}
-                className="flex items-center justify-between mb-3 group cursor-pointer"
+                className="flex items-center justify-between mb-5 group cursor-pointer"
             >
                 <h3 className="font-semibold">Recent Transactions</h3>
                 <div className="flex items-center gap-3">
                     <div className="text-xs text-slate-400">{expanded ? `Showing ${transactions.length}` : 'Showing last 5'}</div>
-                    <button onClick={(e) => { e.stopPropagation(); onNavigate(); }} title="Open transactions" className="p-1 rounded hover:bg-white/5">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                    </button>
-                    <button onClick={(e) => { e.stopPropagation(); onToggleExpand(); }} className="p-1 rounded hover:bg-white/5">
-                        {expanded ? (
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M18 15l-6-6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                        ) : (
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                        )}
-                    </button>
+                   
                 </div>
             </div>
             <div className="space-y-3">
