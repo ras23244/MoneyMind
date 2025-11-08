@@ -22,6 +22,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import AddBudgetDialog from "./AddBudgetDialog";
 import { useCreateBudget } from "./hooks/useBudgetMutations";
+import BalanceCards from './BalanceCards';
 import AddGoalDialog from "./AddGoalDialog";
 import { useCreateGoal } from "./hooks/useGoals";
 import dayjs from "dayjs";
@@ -197,38 +198,26 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button onClick={() => setShowBalance(s => !s)} className="px-3 py-2 bg-slate-700/80 rounded-md text-sm text-white hover:bg-slate-700/95 transition">{showBalance ? 'Hide Balances' : 'Show Balances'}</button>
                     <button onClick={exportCSV} className="px-3 py-2 bg-emerald-500 hover:bg-emerald-600 rounded-md text-white text-sm">Export CSV</button>
                 </div>
             </div>
 
-            {/* Overview cards */}
+            {/* Overview Cards */}
             <section aria-labelledby="overview-heading" className="mb-8">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-                    <div className="p-4 bg-slate-800/40 rounded-lg border border-white/6">
-                        <p className="text-sm text-slate-300">Total Balance</p>
-                        <p className="text-xl font-semibold mt-2 text-slate-100">{showBalance ? currency(totalBalance) : '••••••'}</p>
-                        <p className="text-xs text-slate-400 mt-1">Net worth: {currency(netWorth)}</p>
-                    </div>
-
-                    <div className="p-4 bg-slate-800/40 rounded-lg border border-white/6">
-                        <p className="text-sm text-slate-300">Income (This month)</p>
-                        <p className="text-xl font-semibold mt-2 text-slate-100">{currency(monthlyIncome)}</p>
-                        <p className="text-xs text-slate-400 mt-1">Trend vs last month: +5%</p>
-                    </div>
-
-                    <div className="p-4 bg-slate-800/40 rounded-lg border border-white/6">
-                        <p className="text-sm text-slate-300">Expenses (This month)</p>
-                        <p className="text-xl font-semibold mt-2 text-slate-100">{currency(monthlyExpenses)}</p>
-                        <p className="text-xs text-slate-400 mt-1">Recurring bills: {bills.length}</p>
-                    </div>
-
-                    <div className="p-4 bg-slate-800/40 rounded-lg border border-white/6">
-                        <p className="text-sm text-slate-300">Savings</p>
-                        <p className="text-xl font-semibold mt-2 text-slate-100">{currency(monthlySavings)}</p>
-                        <p className="text-xs text-slate-400 mt-1">Disposable: {currency(disposableAfterBudgets)}</p>
-                    </div>
-                </div>
+                <BalanceCards
+                    financialSummary={{
+                        totalBalance,
+                        monthlyIncome,
+                        monthlyExpenses,
+                        monthlySavings,
+                        incomeChange: 5, // Using placeholder value from the old UI
+                        expensesChange: bills.length > 0 ? ((bills.length / (bills.length || 1)) - 1) * 100 : 0,
+                        savingsChange: disposableAfterBudgets > 0 ? ((disposableAfterBudgets / monthlySavings) - 1) * 100 : 0
+                    }}
+                    isBalanceVisible={showBalance}
+                    setIsBalanceVisible={setShowBalance}
+                    formatCurrency={currency}
+                />
             </section>
 
             {/* Insights & Visuals - BillsPanel is now here */}
@@ -238,85 +227,7 @@ export default function Dashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-[1.8fr_1.1fr_1.1fr] gap-6">
 
                     {/* UPDATED: Upcoming Bills component now spans 2 columns (lg:col-span-2) */}
-                    <div className=" bg-slate-800/40 rounded-lg p-4 border border-white/6">
-                        <div className="flex items-center justify-between mb-3">
-                            <h3 className="font-semibold">Upcoming Bills</h3>
-                            <div className="flex gap-2">
-                                <span className="text-sm text-slate-400">
-                                    Total Due: {currency(billsSummary.totalUpcoming || 0)}
-                                </span>
-                                <Button size="sm" onClick={() => navigate('/bills')} variant="outline">
-                                    Manage Bills
-                                </Button>
-                            </div>
-                        </div>
-
-                        <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                            {bills.slice(0, 5).map((bill) => (
-                                <div
-                                    key={bill._id}
-                                    className={`
-                                        flex items-center justify-between p-3 rounded
-                                        ${bill.isOverdue ? 'bg-red-500/10 border border-red-500/20' : 'bg-white/5'}
-                                        ${bill.autopay?.enabled ? 'border-l-2 border-green-500' : ''}
-                                    `}
-                                >
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-medium">{bill.title}</span>
-                                            {bill.autopay?.enabled && (
-                                                <span className="text-xs bg-green-500/20 text-green-300 px-1.5 py-0.5 rounded">
-                                                    Autopay
-                                                </span>
-                                            )}
-                                            {bill.isOverdue && (
-                                                <span className="text-xs bg-red-500/20 text-red-300 px-1.5 py-0.5 rounded">
-                                                    Overdue
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="text-sm text-slate-400">
-                                            Due {bill.formattedDueDate}
-                                            {bill.daysUntilDue === 0 && " (Today)"}
-                                            {bill.daysUntilDue === 1 && " (Tomorrow)"}
-                                            {bill.daysUntilDue > 1 && ` (in ${bill.daysUntilDue} days)`}
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <div className="text-right">
-                                            <div className="font-semibold">{currency(bill.amount)}</div>
-                                            <div className="text-xs text-slate-400">{bill.category}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-
-                            {bills.length === 0 && (
-                                <div className="text-slate-400 text-center py-4">
-                                    No upcoming bills
-                                </div>
-                            )}
-
-                            {bills.length > 5 && (
-                                <button
-                                    onClick={() => navigate('/bills')}
-                                    className="w-full text-sm text-slate-400 hover:text-slate-300 py-2"
-                                >
-                                    View {bills.length - 5} more bills...
-                                </button>
-                            )}
-                        </div>
-
-                        <div className="mt-4">
-                            <Button
-                                className="w-full"
-                                variant="outline"
-                                onClick={() => setOpenAddBillDialog(true)}
-                            >
-                                Add New Bill
-                            </Button>
-                        </div>
-                    </div>
+                    <BillsPanel userId={user?._id} onNavigate={() => navigate('/bills')} />
 
                     {/* These two components now implicitly take 1 column each in the new lg:grid-cols-4 layout */}
                     <div className="bg-slate-800/40 rounded-lg p-4 border border-white/6">

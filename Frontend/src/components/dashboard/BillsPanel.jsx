@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,19 +9,46 @@ import { motion } from 'framer-motion';
 import { ChevronDown, ChevronUp, PlusCircle, Wallet, AlertCircle, RefreshCw } from 'lucide-react';
 
 const currency = (n) =>
-    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
+    new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        maximumFractionDigits: 0,
+    }).format(n);
 
-export default function BillsPanel({ userId, expanded, onToggleExpand }) {
-    const [viewMode, setViewMode] = useState('upcoming'); // upcoming, overdue, all
+export default function BillsPanel({ userId }) {
+    const [viewMode, setViewMode] = useState('upcoming');
+    const [expanded, setExpanded] = useState(false);
     const [openAddDialog, setOpenAddDialog] = useState(false);
     const { data: bills = [], isLoading } = useBills(userId, { days: 30 });
     const { data: summary = {}, isLoading: summaryLoading } = useBillSummary(userId);
     const updateBillStatus = useUpdateBillStatus();
 
-    const displayBills = expanded ? bills : bills.slice(0, 5);
+    const listRef = useRef(null);
+    const [showScrollUp, setShowScrollUp] = useState(false);
+    const [showScrollDown, setShowScrollDown] = useState(false);
+
+    useEffect(() => {
+        const el = listRef.current;
+        if (!el) return;
+
+        const handleScroll = () => {
+            setShowScrollUp(el.scrollTop > 0);
+            setShowScrollDown(el.scrollTop + el.clientHeight < el.scrollHeight - 5);
+        };
+
+        handleScroll();
+        el.addEventListener('scroll', handleScroll);
+        return () => el.removeEventListener('scroll', handleScroll);
+    }, [bills]);
+
+    const scrollByAmount = (offset) => {
+        if (listRef.current) {
+            listRef.current.scrollBy({ top: offset, behavior: 'smooth' });
+        }
+    };
 
     // Group bills by week
-    const groupedBills = displayBills.reduce((acc, bill) => {
+    const groupedBills = bills.reduce((acc, bill) => {
         const weekStart = dayjs(bill.nextDueDate).startOf('week').format('YYYY-MM-DD');
         if (!acc[weekStart]) acc[weekStart] = [];
         acc[weekStart].push(bill);
@@ -34,7 +61,7 @@ export default function BillsPanel({ userId, expanded, onToggleExpand }) {
 
     return (
         <Card className="bg-gradient-to-br from-slate-900/80 to-slate-800/60 border border-white/10 rounded-2xl shadow-lg">
-            <CardContent className="p-5">
+            <CardContent className="p-5 relative">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-5">
                     <h3 className="text-lg font-semibold text-white flex items-center gap-2">
@@ -47,7 +74,7 @@ export default function BillsPanel({ userId, expanded, onToggleExpand }) {
                             {['upcoming', 'overdue', 'all'].map((mode) => (
                                 <Button
                                     key={mode}
-                                    variant={viewMode === mode ? "secondary" : "ghost"}
+                                    variant={viewMode === mode ? 'secondary' : 'ghost'}
                                     size="sm"
                                     onClick={() => setViewMode(mode)}
                                     className={`capitalize text-xs px-3 py-1 rounded-md transition ${viewMode === mode
@@ -61,7 +88,7 @@ export default function BillsPanel({ userId, expanded, onToggleExpand }) {
                         </div>
 
                         <Button
-                            onClick={onToggleExpand}
+                            onClick={() => setExpanded(!expanded)}
                             variant="ghost"
                             size="sm"
                             className="text-slate-300 hover:bg-white/10 flex items-center gap-1"
@@ -99,8 +126,25 @@ export default function BillsPanel({ userId, expanded, onToggleExpand }) {
                     />
                 </div>
 
-                {/* Bills by Week */}
-                <div className="space-y-6">
+                {/* Bills List (No scrollbar visible) */}
+                <div
+                    ref={listRef}
+                    className="relative space-y-3 overflow-y-auto"
+                    style={{
+                        maxHeight: '320px',
+                        scrollbarWidth: 'none', // Firefox
+                        msOverflowStyle: 'none', // IE, Edge
+                    }}
+                >
+                    {/* Hide scrollbar for Chrome/Safari */}
+                    <style>
+                        {`
+              div::-webkit-scrollbar {
+                display: none;
+              }
+            `}
+                    </style>
+
                     {Object.entries(groupedBills).map(([weekStart, weekBills]) => (
                         <div key={weekStart}>
                             <div className="sticky top-0 bg-slate-900/60 backdrop-blur-sm py-1 text-sm text-slate-400 border-b border-white/5 mb-2">
@@ -114,26 +158,27 @@ export default function BillsPanel({ userId, expanded, onToggleExpand }) {
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.2 }}
                                         className={`
-                                            flex items-center justify-between p-4 rounded-xl transition
-                                            ${bill.isOverdue ? 'bg-red-500/10' : 'bg-white/5 hover:bg-white/10'}
-                                            ${bill.autopay?.enabled ? 'border-l-4 border-green-500/70' : 'border-l border-white/10'}
-                                        `}
+                      flex items-center justify-between p-4 rounded-xl transition
+                      ${bill.isOverdue ? 'bg-red-500/10' : 'bg-white/5 hover:bg-white/10'}
+                      ${bill.autopay?.enabled
+                                                ? 'border-l-4 border-green-500/70'
+                                                : 'border-l border-white/10'
+                                            }
+                    `}
                                     >
                                         <div>
                                             <div className="flex items-center gap-2">
                                                 <span className="font-medium text-white">{bill.title}</span>
                                                 {bill.autopay?.enabled && (
-                                                    <Badge
-                                                        className="bg-green-500/20 text-green-300 text-[10px] px-2 py-0.5"
-                                                    >
+                                                    <Badge className="bg-green-500/20 text-green-300 text-[10px] px-2 py-0.5">
                                                         Autopay
                                                     </Badge>
                                                 )}
                                             </div>
                                             <div className="text-sm text-slate-400">
                                                 Due {bill.formattedDueDate}
-                                                {bill.daysUntilDue === 0 && " (Today)"}
-                                                {bill.daysUntilDue === 1 && " (Tomorrow)"}
+                                                {bill.daysUntilDue === 0 && ' (Today)'}
+                                                {bill.daysUntilDue === 1 && ' (Tomorrow)'}
                                                 {bill.daysUntilDue > 1 && ` (in ${bill.daysUntilDue} days)`}
                                             </div>
                                         </div>
@@ -165,6 +210,27 @@ export default function BillsPanel({ userId, expanded, onToggleExpand }) {
                         </div>
                     ))}
                 </div>
+
+                {/* Floating Scroll Circles */}
+                <motion.button
+                    onClick={() => scrollByAmount(-200)}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: showScrollUp ? 1 : 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="absolute right-4 top-[40%] z-10 bg-slate-700/80 hover:bg-slate-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg"
+                >
+                    <ChevronUp className="w-4 h-4" />
+                </motion.button>
+
+                <motion.button
+                    onClick={() => scrollByAmount(200)}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: showScrollDown ? 1 : 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="absolute right-4 bottom-12 z-10 bg-slate-700/80 hover:bg-slate-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg"
+                >
+                    <ChevronDown className="w-4 h-4" />
+                </motion.button>
 
                 {/* Add Bill Button */}
                 <div className="mt-6">
