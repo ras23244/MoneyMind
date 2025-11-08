@@ -135,9 +135,19 @@ export default function Dashboard() {
             }));
     }, [financialSummary, transactions]);
 
-    //
+
     // Use backend-calculated heatmap data
     const heatmap = spendingHeatmap;
+
+    // Defensive normalization: ensure we have a 4x7 matrix. The backend is expected
+    // to return an array of 4 weeks, each an array of 7 daily values. If the shape
+    // is different (or data is not ready) fall back to a zero-filled matrix to
+    // avoid runtime errors while rendering.
+    const _defaultHeatmap = Array.from({ length: 4 }, () => Array.from({ length: 7 }, () => 0));
+    const heatmapRows = Array.isArray(heatmap) && heatmap.length === 4 && heatmap.every(r => Array.isArray(r) && r.length === 7)
+        ? heatmap
+        : _defaultHeatmap;
+
 
     // Insights simple rules
     const insights = useMemo(() => {
@@ -223,13 +233,10 @@ export default function Dashboard() {
             {/* Insights & Visuals - BillsPanel is now here */}
             <section aria-labelledby="insights-heading" className="mb-8">
                 <h2 id="insights-heading" className="text-sm font-medium text-slate-300 mb-3">Insights & Analysis</h2>
-                {/* CHANGED: Parent grid from lg:grid-cols-3 to lg:grid-cols-4 */}
                 <div className="grid grid-cols-1 lg:grid-cols-[1.8fr_1.1fr_1.1fr] gap-6">
 
-                    {/* UPDATED: Upcoming Bills component now spans 2 columns (lg:col-span-2) */}
                     <BillsPanel userId={user?._id} onNavigate={() => navigate('/bills')} />
 
-                    {/* These two components now implicitly take 1 column each in the new lg:grid-cols-4 layout */}
                     <div className="bg-slate-800/40 rounded-lg p-4 border border-white/6">
                         <div className="flex items-center justify-between mb-3">
                             <h3 className="font-semibold">Notes & Insights</h3>
@@ -444,8 +451,8 @@ export default function Dashboard() {
             <section aria-labelledby="activity-heading" className="mb-10">
                 <h2 id="activity-heading" className="text-sm font-medium text-slate-300 mb-3">Activity</h2>
                 <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
-                    {/* UPDATED: TransactionList component now spans 3 columns (lg:col-span-3) */}
-                    <div className="lg:col-span-3">
+                    {/* UPDATED: TransactionList component now spans 2 columns (lg:col-span-2) */}
+                    <div className="lg:col-span-2">
                         <TransactionList
                             transactions={transactions.slice(0, 5)}
                             expanded={false}
@@ -462,45 +469,67 @@ export default function Dashboard() {
                         </div>
                     </div>
 
-                    {/* Spending Heatmap remains at 2 columns */}
-                    <div className="lg:col-span-2">
-                        <div className="bg-slate-800/40 rounded-lg p-4 border border-white/6">
-                            <h3 className="font-semibold mb-3">Spending Heatmap</h3>
-                            <div className="space-y-4">
-                                {heatmap.map((week, weekIndex) => (
-                                    <div key={weekIndex} className="grid grid-cols-7 gap-1">
-                                        {week.map((value, dayIndex) => (
-                                            <div
-                                                key={`${weekIndex}-${dayIndex}`}
-                                                className={`
-                                                    text-[10px] text-center py-2 rounded
-                                                    ${value === 0 ? 'bg-white/3' :
-                                                        value < 1000 ? 'bg-green-500/20' :
-                                                            value < 5000 ? 'bg-green-500/40' :
-                                                                'bg-green-500/60'}
-                                                `}
-                                            >
-                                                <div className="text-[9px] font-medium">
-                                                    {['M', 'T', 'W', 'T', 'F', 'S', 'S'][dayIndex]}
+                    {/* Spending Heatmap expanded to 3 columns for better visibility */}
+                    <div className="lg:col-span-3">
+                        <div className="bg-slate-800/60 rounded-xl p-4 border border-white/10 shadow-md max-w-[850px] mx-auto">
+                            <h3 className="font-semibold mb-4 text-slate-100 text-lg text-center">
+                                Spending Heatmap
+                            </h3>
+
+                            <div className="flex flex-col gap-2">
+                                {heatmapRows.map((week, weekIndex) => (
+                                    <div
+                                        key={weekIndex}
+                                        className="grid grid-cols-7 gap-2 justify-center"
+                                    >
+                                        {week.map((value, dayIndex) => {
+                                            const todayDay = dayjs().day();
+                                            const offsetWithinWeek = (todayDay - dayIndex + 7) % 7;
+                                            const daysSince = offsetWithinWeek + weekIndex * 7;
+                                            const cellDate = dayjs().startOf("day").subtract(daysSince, "day");
+                                            const label = cellDate.format("D MMM");
+
+                                            let bgColor = "bg-white/10";
+                                            if (value > 0 && value < 1000) bgColor = "bg-emerald-500/20";
+                                            else if (value >= 1000 && value < 5000) bgColor = "bg-emerald-500/40";
+                                            else if (value >= 5000) bgColor = "bg-emerald-500/60";
+
+                                            return (
+                                                <div
+                                                    key={`${weekIndex}-${dayIndex}`}
+                                                    className={`group flex flex-col items-center justify-center rounded-lg ${bgColor}
+                  p-2 sm:p-3 min-h-[60px] transition-all duration-200 border border-white/5 text-center
+                  hover:scale-105 hover:border-emerald-400/30 hover:shadow-md hover:shadow-emerald-500/10 hover:brightness-110
+                `}
+                                                >
+                                                    <span className="text-[11px] text-slate-300 leading-tight group-hover:text-emerald-300 transition-colors duration-200">
+                                                        {label}
+                                                    </span>
+                                                    <span className="text-xs font-medium text-slate-100 group-hover:text-white transition-colors duration-200">
+                                                        {currency(value)}
+                                                    </span>
                                                 </div>
-                                                <div className="text-[9px] mt-1">{currency(value)}</div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 ))}
-                                <div className="flex justify-between text-xs text-slate-400 mt-2">
+
+                                {/* Legend */}
+                                <div className="flex justify-between items-center text-xs text-slate-400 mt-3 px-2">
                                     <span>Less</span>
                                     <div className="flex gap-1">
-                                        <div className="w-3 h-3 rounded bg-white/3"></div>
-                                        <div className="w-3 h-3 rounded bg-green-500/20"></div>
-                                        <div className="w-3 h-3 rounded bg-green-500/40"></div>
-                                        <div className="w-3 h-3 rounded bg-green-500/60"></div>
+                                        <div className="w-3 h-3 rounded bg-white/10"></div>
+                                        <div className="w-3 h-3 rounded bg-emerald-500/20"></div>
+                                        <div className="w-3 h-3 rounded bg-emerald-500/40"></div>
+                                        <div className="w-3 h-3 rounded bg-emerald-500/60"></div>
                                     </div>
                                     <span>More</span>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+
                 </div>
             </section>
 

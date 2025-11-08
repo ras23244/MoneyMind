@@ -49,7 +49,7 @@ export default function BalanceCards({
 
             {/* Income */}
             <Card className="bg-slate-900/70 border border-white/10 rounded-xl hover:border-green-400/40 transition-all duration-200 hover:shadow-lg hover:shadow-green-500/10">
-                <CardContent className="p-4 md:p-5">
+                <CardContent className="p-3 md:p-3">
                     <div className="flex items-center gap-2 mb-1">
                         <ArrowUpRight className="w-4 h-4 text-green-400" />
                         <span className="text-xs text-slate-400">Income</span>

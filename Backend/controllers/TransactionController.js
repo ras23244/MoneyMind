@@ -195,7 +195,7 @@ exports.getTransactionTrends = async (req, res) => {
 
 exports.getCategoryBreakdown = async (req, res) => {
     try {
-        const userId = new mongoose.Types.ObjectId(req.user.id);
+        const userId = req.user.id;
         const { period = 'month' } = req.query;
 
         let dateFilter = {};
@@ -247,8 +247,10 @@ exports.getCategoryBreakdown = async (req, res) => {
 
 exports.getSpendingHeatmap = async (req, res) => {
     try {
+        // Ensure we compare Date objects and ObjectIds in aggregation to avoid
+        // type-mismatch returning no results.
         const userId = new mongoose.Types.ObjectId(req.user.id);
-        const startDate = dayjs().subtract(27, 'days').format('YYYY-MM-DD');
+        const startDate = dayjs().subtract(27, 'days').startOf('day').toDate();
 
         const dailySpending = await Transaction.aggregate([
             {
@@ -258,9 +260,10 @@ exports.getSpendingHeatmap = async (req, res) => {
                     type: 'expense'
                 }
             },
+            // Group by date string (YYYY-MM-DD) so we aggregate per day
             {
                 $group: {
-                    _id: '$date',
+                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
                     total: { $sum: '$amount' }
                 }
             },
@@ -294,7 +297,7 @@ exports.getSpendingHeatmap = async (req, res) => {
 
 exports.getTrendData = async (req, res) => {
     try {
-        const userId = new mongoose.Types.ObjectId(req.user.id);
+        const userId = req.user.id;
         const startDate = dayjs().subtract(5, 'months').startOf('month').format('YYYY-MM-DD');
 
         const monthlyData = await Transaction.aggregate([
@@ -350,7 +353,7 @@ exports.getTrendData = async (req, res) => {
 
 exports.getFinancialSummary = async (req, res) => {
     try {
-        const userId = new mongoose.Types.ObjectId(req.user.id); // from auth middleware
+        const userId = req.user.id;
         const now = dayjs();
         const currentMonth = now.format("YYYY-MM");
         const lastMonth = now.subtract(1, "month").format("YYYY-MM");
