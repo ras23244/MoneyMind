@@ -139,10 +139,6 @@ export default function Dashboard() {
     // Use backend-calculated heatmap data
     const heatmap = spendingHeatmap;
 
-    // Defensive normalization: ensure we have a 4x7 matrix. The backend is expected
-    // to return an array of 4 weeks, each an array of 7 daily values. If the shape
-    // is different (or data is not ready) fall back to a zero-filled matrix to
-    // avoid runtime errors while rendering.
     const _defaultHeatmap = Array.from({ length: 4 }, () => Array.from({ length: 7 }, () => 0));
     const heatmapRows = Array.isArray(heatmap) && heatmap.length === 4 && heatmap.every(r => Array.isArray(r) && r.length === 7)
         ? heatmap
@@ -198,6 +194,19 @@ export default function Dashboard() {
     if (loading) return <div className="p-6">Loading dashboard...</div>;
     if (!user) return <div className="p-6">Please log in to view dashboard.</div>;
 
+    // Normalize data for BalanceCards: prefer backend-provided summary but
+    // fall back to local-calculated values when needed.
+    const balanceData = {
+        totalBalance: financialSummary.totalBalance ?? totalBalance,
+        monthlyIncome: financialSummary.monthlyIncome ?? monthlyIncome,
+        monthlyExpenses: financialSummary.monthlyExpenses ?? monthlyExpenses,
+        monthlySavings: financialSummary.monthlySavings ?? monthlySavings,
+        incomeChange: typeof financialSummary.incomeChange !== 'undefined' ? financialSummary.incomeChange : 0,
+        expensesChange: typeof financialSummary.expensesChange !== 'undefined' ? financialSummary.expensesChange : 0,
+        savingsChange: typeof financialSummary.savingsChange !== 'undefined' ? financialSummary.savingsChange : 0,
+        netWorth: financialSummary.netWorth ?? totalBalance,
+    };
+
     return (
         <div className="p-4 max-w-[1300px] mx-auto">
 
@@ -215,15 +224,7 @@ export default function Dashboard() {
             {/* Overview Cards */}
             <section aria-labelledby="overview-heading" className="mb-8">
                 <BalanceCards
-                    financialSummary={{
-                        totalBalance,
-                        monthlyIncome,
-                        monthlyExpenses,
-                        monthlySavings,
-                        incomeChange: 5, // Using placeholder value from the old UI
-                        expensesChange: bills.length > 0 ? ((bills.length / (bills.length || 1)) - 1) * 100 : 0,
-                        savingsChange: disposableAfterBudgets > 0 ? ((disposableAfterBudgets / monthlySavings) - 1) * 100 : 0
-                    }}
+                    financialSummary={balanceData}
                     isBalanceVisible={showBalance}
                     setIsBalanceVisible={setShowBalance}
                     formatCurrency={currency}

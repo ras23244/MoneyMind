@@ -10,8 +10,8 @@ const percent = (n) => `${Math.round(n)}%`;
 export default function CategoryBreakdown({ categoryBreakdown, monthlyExpenses }) {
     return (
         <div className="bg-white/5 rounded-lg p-4 border border-white/6">
-            <h3 className="font-semibold mb-2">Spending by Category</h3>
-            <div style={{ width: '100%', height: 220 }}>
+            <h3 className="font-semibold mb-2"></h3>
+            <div style={{ width: '100%', height: 'max-content' }}>
                 <ResponsiveContainer>
                     <PieChart>
                         <Pie data={categoryBreakdown} dataKey="value" nameKey="name" outerRadius={70} innerRadius={40}>

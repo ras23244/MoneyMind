@@ -195,7 +195,7 @@ exports.getTransactionTrends = async (req, res) => {
 
 exports.getCategoryBreakdown = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = new mongoose.Types.ObjectId(req.user.id);
         const { period = 'month' } = req.query;
 
         let dateFilter = {};
@@ -247,8 +247,7 @@ exports.getCategoryBreakdown = async (req, res) => {
 
 exports.getSpendingHeatmap = async (req, res) => {
     try {
-        // Ensure we compare Date objects and ObjectIds in aggregation to avoid
-        // type-mismatch returning no results.
+   
         const userId = new mongoose.Types.ObjectId(req.user.id);
         const startDate = dayjs().subtract(27, 'days').startOf('day').toDate();
 
@@ -260,7 +259,6 @@ exports.getSpendingHeatmap = async (req, res) => {
                     type: 'expense'
                 }
             },
-            // Group by date string (YYYY-MM-DD) so we aggregate per day
             {
                 $group: {
                     _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
@@ -277,7 +275,6 @@ exports.getSpendingHeatmap = async (req, res) => {
             { $sort: { date: 1 } }
         ]);
 
-        // Convert to 4x7 matrix format
         const heatmapData = Array(4).fill().map(() => Array(7).fill(0));
         dailySpending.forEach(day => {
             const date = dayjs(day.date);
@@ -398,6 +395,7 @@ exports.getFinancialSummary = async (req, res) => {
             expensesChange: percentageChange(currentExpenses, lastExpenses),
             savingsChange: percentageChange(currentSavings, lastSavings),
         };
+        console.log("Financial Summary:", summary);
 
         return res.status(200).json({ success: true, data: summary });
     } catch (err) {
