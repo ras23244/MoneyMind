@@ -27,7 +27,6 @@ import AddGoalDialog from "./AddGoalDialog";
 import { useCreateGoal } from "./hooks/useGoals";
 import dayjs from "dayjs";
 import NotesPanel from './NotesPanel';
-
 import CategoryBreakdown from './dashboard/CategoryBreakdown';
 import TransactionList from './dashboard/TransactionList';
 import BudgetsList from './dashboard/BudgetsList';
@@ -79,7 +78,6 @@ export default function Dashboard() {
         accountsLoading || summaryLoading || categoryBreakdownLoading ||
         spendingHeatmapLoading || trendsLoading || billsLoading || billsSummaryLoading;
 
-    // Use backend-calculated metrics directly
     const {
         totalBalance = 0,
         monthlyIncome = 0,
