@@ -263,6 +263,7 @@ export default function Dashboard() {
                         <h3 className="font-semibold mb-3">Alerts</h3>
                         {(() => {
                             const alerts = [];
+
                             (billsUi || []).forEach((b) => {
                                 if (!b.due) return;
                                 const days = dayjs(b.due).diff(dayjs(), 'day');
@@ -274,6 +275,8 @@ export default function Dashboard() {
                                         text: `Due in ${days} day${days !== 1 ? 's' : ''} • ${currency(b.amount)}`,
                                         priority: 'high',
                                         color: 'bg-yellow-200 text-yellow-800',
+                                        // timestamp: closer due => higher ts
+                                        ts: Date.now() - (days * 24 * 60 * 60 * 1000),
                                     });
                                 }
                             });
@@ -289,6 +292,9 @@ export default function Dashboard() {
                                         text: `${Math.round(pct)}% used (${currency(b.spent)} of ${currency(b.limit)})`,
                                         priority: 'high',
                                         color: 'bg-red-200 text-red-800',
+                                        // timestamp: higher percent => higher ts
+                                        ts: Date.now() + Math.round(pct) * 1000,
+                                        pct
                                     });
                                 } else if (pct >= 75) {
                                     alerts.push({
@@ -298,6 +304,8 @@ export default function Dashboard() {
                                         text: `${Math.round(pct)}% used`,
                                         priority: 'medium',
                                         color: 'bg-orange-100 text-orange-800',
+                                        ts: Date.now() + Math.round(pct) * 1000,
+                                        pct
                                     });
                                 }
                             });
@@ -305,14 +313,29 @@ export default function Dashboard() {
                             (goalsUi || []).forEach((g, idx) => {
                                 if (!g.target || g.target <= 0) return;
                                 const pct = (g.current / g.target) * 100;
-                                if (pct >= 75) {
+                                // try to read endDate if available in original goals data
+                                let daysLeft = null;
+                                try {
+                                    const original = goals[idx];
+                                    if (original && original.endDate) {
+                                        daysLeft = dayjs(original.endDate).diff(dayjs(), 'day');
+                                    }
+                                } catch (e) {
+                                    daysLeft = null;
+                                }
+
+                                if (pct >= 75 || (daysLeft !== null && daysLeft <= 7 && daysLeft >= 0)) {
+                                    const title = pct >= 75 ? `${g.name} reached ${Math.round(pct)}%` : `${g.name} ending soon`;
+                                    const text = daysLeft !== null && daysLeft <= 7 && daysLeft >= 0 ? `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left • ${currency(g.current)} of ${currency(g.target)}` : `${currency(g.current)} of ${currency(g.target)}`;
                                     alerts.push({
                                         id: `goal-${idx}`,
                                         icon: '🎯',
-                                        title: `${g.name} reached ${Math.round(pct)}%`,
-                                        text: `${currency(g.current)} of ${currency(g.target)}`,
+                                        title,
+                                        text,
                                         priority: 'positive',
                                         color: 'bg-green-100 text-green-800',
+                                        ts: Date.now() + Math.round(pct) * 1000 + (daysLeft !== null ? Math.max(0, 7 - daysLeft) * 1000 : 0),
+                                        pct,
                                     });
                                 }
                             });
@@ -341,6 +364,7 @@ export default function Dashboard() {
                                         text: `Spent ${Math.round(cur / Math.max(1, pv))}× vs last month (${currency(cur)})`,
                                         priority: 'high',
                                         color: 'bg-orange-100 text-orange-800',
+                                        ts: Date.now() + Math.round(cur / Math.max(1, pv)) * 1000,
                                     });
                                 }
                             });
@@ -353,6 +377,7 @@ export default function Dashboard() {
                                     text: r.note || '',
                                     priority: 'low',
                                     color: 'bg-slate-100 text-slate-800',
+                                    ts: r.date ? Number(new Date(r.date)) : Date.now(),
                                 });
                             });
 
@@ -360,8 +385,9 @@ export default function Dashboard() {
                                 return <div className="text-slate-400">No alerts right now — your finances look stable.</div>;
                             }
 
+                            // Primary sort: newest / most urgent (ts desc), Secondary: priority
                             const priorityOrder = { high: 0, medium: 1, positive: 2, low: 3 };
-                            alerts.sort((a, b) => (priorityOrder[a.priority] ?? 4) - (priorityOrder[b.priority] ?? 4));
+                            alerts.sort((a, b) => (b.ts || 0) - (a.ts || 0) || ((priorityOrder[a.priority] ?? 4) - (priorityOrder[b.priority] ?? 4)));
 
                             return (
                                 <div className="space-y-3">
