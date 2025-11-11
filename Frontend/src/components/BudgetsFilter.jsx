@@ -33,17 +33,7 @@ export default function BudgetsFilter({ filters, setFilters, categories = [], mo
                 ))}
             </select>
 
-            {/* Month Filter */}
-            <select
-                value={filters.month || ""}
-                onChange={(e) => setFilters({ ...filters, month: e.target.value })}
-                className="p-2 rounded bg-[#1f1d1f] text-white border border-white/20"
-            >
-                <option value="">All Months</option>
-                {months.map((m) => (
-                    <option key={m} value={m}>{m}</option>
-                ))}
-            </select>
+            
 
             {/* Duration Type Filter */}
             <select

@@ -238,7 +238,7 @@ export default function Budgets() {
                 <BudgetHistory budgets={historicalBudgets} transactions={transactions} />
             ) : (
                 <>
-                    <MonthlyBudgetCard budgets={filteredBudgets} />
+                    <MonthlyBudgetCard budgets={currentBudgets} />
 
                     <Card className="bg-card-dark border border-white/10">
                         <CardHeader>

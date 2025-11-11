@@ -6,6 +6,7 @@ import AddBudgetDialog from "./AddBudgetDialog";
 
 export default function MonthlyBudgetCard({ budgets }) {
     const [open, setOpen] = useState(false);
+    console.log("MonthlyBudgetCard budgets:", budgets);
 
     if (!budgets || budgets.length === 0) {
         return (
