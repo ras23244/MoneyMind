@@ -1,5 +1,5 @@
-const mongoose= require('mongoose');
-const accountSchema= new mongoose.Schema({
+const mongoose = require('mongoose');
+const accountSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -7,7 +7,12 @@ const accountSchema= new mongoose.Schema({
     },
     accountType: {
         type: String,
-        enum: ['checking', 'savings', 'credit'],
+        enum: ['checking', 'savings', 'credit', 'wallet', 'investment'],
+        default: 'checking'
+    },
+    accountName: {
+        type: String,
+        required: true,
     },
     accountNumber: {
         type: String,
@@ -23,9 +28,21 @@ const accountSchema= new mongoose.Schema({
         required: true,
         default: 0,
     },
-    linkedbyAA:{
-        type:Boolean,
-        default:false
+    previousBalance: {
+        type: Number,
+        default: 0,
+    },
+    notes: {
+        type: String,
+        default: '',
+    },
+    linkedbyAA: {
+        type: Boolean,
+        default: false
+    },
+    lastUpdated: {
+        type: Date,
+        default: Date.now,
     },
     // consentId:{
     //     type:String,
