@@ -14,7 +14,7 @@ export default function NotesPanel() {
     const { user } = useUser();
     const userId = user?._id;
 
-    const { data: notes = [] } = useNotes(userId); // keep notes with _id + content
+    const { data: notes = [] } = useNotes(userId);
     const createNoteMutation = useCreateNote(userId);
     const updateNoteMutation = useUpdateNote(userId);
     const deleteNoteMutation = useDeleteNote(userId);

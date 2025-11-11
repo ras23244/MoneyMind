@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useCreateBill } from '../hooks/useBills';
+import { useCreateBill, useUpdateBillStatus } from '../hooks/useBills';
 import dayjs from 'dayjs';
 
-export default function AddBillDialog({ open, setOpen, onSave }) {
+export default function AddBillDialog({ open, setOpen, editingBill = null }) {
     const createBill = useCreateBill();
+    const updateBill = useUpdateBillStatus();
     const [formData, setFormData] = useState({
         title: '',
         amount: '',
@@ -19,6 +20,24 @@ export default function AddBillDialog({ open, setOpen, onSave }) {
             accountId: ''
         }
     });
+
+    useEffect(() => {
+        if (editingBill) {
+            setFormData({
+                title: editingBill.title,
+                amount: editingBill.amount.toString(),
+                dueDate: dayjs(editingBill.dueDate).format('YYYY-MM-DD'),
+                category: editingBill.category,
+                frequency: editingBill.frequency,
+                reminderDays: editingBill.reminderDays,
+                recurring: editingBill.recurring,
+                autopay: {
+                    enabled: editingBill.autopay?.enabled || false,
+                    accountId: editingBill.autopay?.accountId || ''
+                }
+            });
+        }
+    }, [editingBill]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -34,31 +53,55 @@ export default function AddBillDialog({ open, setOpen, onSave }) {
             delete payload.autopay.accountId;
         }
 
-        createBill.mutate(payload, {
-            onSuccess: () => {
-                setOpen(false);
-                setFormData({
-                    title: '',
-                    amount: '',
-                    dueDate: dayjs().format('YYYY-MM-DD'),
-                    category: '',
-                    frequency: 'monthly',
-                    reminderDays: 3,
-                    recurring: true,
-                    autopay: {
-                        enabled: false,
-                        accountId: ''
+        if (editingBill) {
+            updateBill.mutate(
+                { billId: editingBill._id, ...payload },
+                {
+                    onSuccess: () => {
+                        setOpen(false);
+                        setFormData({
+                            title: '',
+                            amount: '',
+                            dueDate: dayjs().format('YYYY-MM-DD'),
+                            category: '',
+                            frequency: 'monthly',
+                            reminderDays: 3,
+                            recurring: true,
+                            autopay: {
+                                enabled: false,
+                                accountId: ''
+                            }
+                        });
                     }
-                });
-            }
-        });
+                }
+            );
+        } else {
+            createBill.mutate(payload, {
+                onSuccess: () => {
+                    setOpen(false);
+                    setFormData({
+                        title: '',
+                        amount: '',
+                        dueDate: dayjs().format('YYYY-MM-DD'),
+                        category: '',
+                        frequency: 'monthly',
+                        reminderDays: 3,
+                        recurring: true,
+                        autopay: {
+                            enabled: false,
+                            accountId: ''
+                        }
+                    });
+                }
+            });
+        }
     };
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent className="bg-slate-900 text-white border border-white/10">
                 <DialogHeader>
-                    <DialogTitle>Add New Bill</DialogTitle>
+                    <DialogTitle>{editingBill ? 'Edit Bill' : 'Add New Bill'}</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
@@ -180,7 +223,9 @@ export default function AddBillDialog({ open, setOpen, onSave }) {
                             className="bg-blue-500 hover:bg-blue-600"
                             disabled={createBill.isLoading}
                         >
-                            {createBill.isLoading ? 'Adding...' : 'Add Bill'}
+                            {editingBill
+                                ? (updateBill.isLoading ? 'Updating...' : 'Update Bill')
+                                : (createBill.isLoading ? 'Adding...' : 'Add Bill')}
                         </Button>
                     </div>
                 </form>

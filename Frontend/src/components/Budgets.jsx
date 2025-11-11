@@ -93,10 +93,33 @@ export default function Budgets() {
         [filters]
     );
 
+    const isCurrentBudget = useCallback((budget) => {
+        const today = dayjs();
+        const currentMonth = today.format("YYYY-MM");
+
+        if (budget.durationType === "day") {
+            return budget.day === today.format("YYYY-MM-DD");
+        }
+
+        if (budget.durationType === "month") {
+            return budget.month === currentMonth;
+        }
+
+        return false;
+    }, []);
+
     const filteredBudgets = useMemo(
         () => applyClientSideFilters(budgetsWithSpent),
         [budgetsWithSpent, applyClientSideFilters]
     );
+
+    const { currentBudgets, historicalBudgets } = useMemo(() => {
+        const filtered = applyClientSideFilters(budgetsWithSpent);
+        return {
+            currentBudgets: filtered.filter(isCurrentBudget),
+            historicalBudgets: filtered.filter(budget => !isCurrentBudget(budget))
+        };
+    }, [budgetsWithSpent, applyClientSideFilters, isCurrentBudget]);
 
     const monthlyData = useMemo(() => {
         const allMonths = [...new Set(budgetsWithSpent.map((b) => b.month))]
@@ -191,9 +214,7 @@ export default function Budgets() {
     };
 
     // 🔹 Decide what data pie chart should display (filtered vs all)
-    const chartBudgets = filteredBudgets.length > 0 ? filteredBudgets : budgetsWithSpent;
-
-    return (
+    const chartBudgets = currentBudgets.length > 0 ? currentBudgets : []; return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-white">Budgets</h1>
@@ -214,7 +235,7 @@ export default function Budgets() {
             </div>
 
             {showHistory ? (
-                <BudgetHistory budgets={filteredBudgets} transactions={transactions} />
+                <BudgetHistory budgets={historicalBudgets} transactions={transactions} />
             ) : (
                 <>
                     <MonthlyBudgetCard budgets={filteredBudgets} />
@@ -315,8 +336,8 @@ export default function Budgets() {
                                 ref={scrollRef}
                                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-black/40"
                             >
-                                {filteredBudgets.length > 0 ? (
-                                    filteredBudgets.map((budget, idx) => (
+                                {currentBudgets.length > 0 ? (
+                                    currentBudgets.map((budget, idx) => (
                                         <BudgetProgressCard
                                             key={budget._id || idx}
                                             budget={budget}
@@ -334,7 +355,7 @@ export default function Budgets() {
                                 )}
                             </div>
 
-                            {filteredBudgets.length > 6 && (
+                            {currentBudgets.length > 6 && (
                                 <div
                                     className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-white/50 animate-bounce text-2xl cursor-pointer select-none"
                                     onClick={handleScrollIndicatorClick}

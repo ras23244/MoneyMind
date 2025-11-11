@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useBills, useBillSummary, useUpdateBillStatus } from '../hooks/useBills';
+import { useBills, useBillSummary, useUpdateBillStatus, useDeleteBill } from '../hooks/useBills';
 import AddBillDialog from './AddBillDialog';
 import dayjs from 'dayjs';
 import { motion } from 'framer-motion';
@@ -37,6 +37,10 @@ export default function BillsPanel({ userId }) {
     const [showScrollUp, setShowScrollUp] = useState(false);
     const [showScrollDown, setShowScrollDown] = useState(false);
 
+
+    const deleteBillMutation = useDeleteBill(userId);
+    const editBillMutation = useUpdateBillStatus(userId);
+
     useEffect(() => {
         const el = listRef.current;
         if (!el) return;
@@ -65,6 +69,28 @@ export default function BillsPanel({ userId }) {
     if (isLoading || summaryLoading) {
         return <div className="animate-pulse text-slate-400 text-center py-10">Loading bills...</div>;
     }
+
+    const [editingBill, setEditingBill] = useState(null);
+
+    const handleEditBill = (bill) => {
+        setEditingBill(bill);
+        setOpenAddDialog(true);
+    };
+
+    const handleDeleteBill = (billId) => {
+        if (window.confirm('Are you sure you want to delete this bill?')) {
+            deleteBillMutation.mutate(billId, {
+                onSuccess: () => {
+                    console.log('Bill deleted successfully');
+                },
+                onError: (error) => {
+                    console.error('Error deleting bill:', error);
+                }
+            });
+        }
+    };
+
+
 
     return (
         <Card className="bg-gradient-to-br from-slate-900/80 to-slate-800/60 border border-white/10 rounded-2xl shadow-lg">
@@ -119,6 +145,8 @@ export default function BillsPanel({ userId }) {
                                         key={bill._id}
                                         bill={bill}
                                         updateBillStatus={updateBillStatus}
+                                        handleEditBill={handleEditBill}
+                                        handleDeleteBill={handleDeleteBill}
                                     />
                                 ))}
                             </div>
@@ -156,13 +184,13 @@ export default function BillsPanel({ userId }) {
                     </Button>
                 </div>
 
-                <AddBillDialog open={openAddDialog} setOpen={setOpenAddDialog} />
+                <AddBillDialog open={openAddDialog} setOpen={setOpenAddDialog} editingBill={editingBill} />
             </CardContent>
         </Card>
     );
 }
 
-function BillItem({ bill, updateBillStatus }) {
+function BillItem({ bill, updateBillStatus, handleEditBill, handleDeleteBill }) {
     const [hovered, setHovered] = useState(false);
 
     return (
@@ -213,16 +241,22 @@ function BillItem({ bill, updateBillStatus }) {
                         <Button
                             size="icon"
                             variant="ghost"
-                            className="text-yellow-400 "
-                            onClick={() => console.log('Edit bill', bill._id)}
+                            className="text-yellow-400 hover:bg-yellow-400/10 hover:text-yellow-300"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditBill(bill);
+                            }}
                         >
                             <Pencil className="w-4 h-4" />
                         </Button>
                         <Button
                             size="icon"
                             variant="ghost"
-                            className="text-red-500 "
-                            onClick={() => console.log('Delete bill', bill._id)}
+                            className="text-red-500 hover:bg-red-500/10 hover:text-red-400"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteBill(bill._id);
+                            }}
                         >
                             <Trash2 className="w-4 h-4" />
                         </Button>
