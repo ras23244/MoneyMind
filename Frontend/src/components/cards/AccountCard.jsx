@@ -5,6 +5,7 @@ import { Wallet, Banknote, TrendingUp, Edit2, Trash2, Eye } from 'lucide-react';
 import { useDeleteAccount } from '../hooks/useAccounts';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import RecentTransactions from '../RecentTransactions';
 
 dayjs.extend(relativeTime);
 

@@ -12,6 +12,7 @@ router.get('/get-account-stats', protect, AccountController.getAccountStats);
 router.put('/update-account/:id', protect, AccountController.updateAccount);
 router.delete('/delete-account/:id', protect, AccountController.deleteAccount);
 
+
 // router.get('/accounts/:id', protect, AccountController.getAccountById);
 
 

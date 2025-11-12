@@ -12,7 +12,6 @@ const accountSchema = new mongoose.Schema({
     },
     accountName: {
         type: String,
-        required: true,
     },
     accountNumber: {
         type: String,

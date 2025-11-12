@@ -8,6 +8,7 @@ import { useAccounts, useAccountStats } from "./hooks/useAccounts";
 import AddAccountDialog from "./dialogs/AddAccountDialog";
 import UpdateAccountDialog from "./dialogs/UpdateAccountDialog";
 import ImportCSVDialog from "./dialogs/ImportCSVDialog";
+import AccountTransactionsModal from "./dialogs/AccountTransactionsModal";
 import AccountCard from "./cards/AccountCard";
 import AccountStats from "./cards/AccountStats";
 
@@ -20,6 +21,7 @@ const Accounts = () => {
     const [openUpdateDialog, setOpenUpdateDialog] = useState(false);
     const [openImportDialog, setOpenImportDialog] = useState(false);
     const [selectedAccount, setSelectedAccount] = useState(null);
+    const [openTransactionsModal, setOpenTransactionsModal] = useState(false);
 
     // Group accounts by type
     const groupedAccounts = useMemo(() => {
@@ -37,8 +39,8 @@ const Accounts = () => {
     };
 
     const handleViewTransactions = (account) => {
-        console.log('View transactions for:', account);
-        // TODO: Navigate to transactions filtered by this account
+        setSelectedAccount(account);
+        setOpenTransactionsModal(true);
     };
 
     return (
@@ -180,6 +182,11 @@ const Accounts = () => {
             <ImportCSVDialog
                 open={openImportDialog}
                 setOpen={setOpenImportDialog}
+            />
+            <AccountTransactionsModal
+                open={openTransactionsModal}
+                setOpen={setOpenTransactionsModal}
+                account={selectedAccount}
             />
         </div>
     );

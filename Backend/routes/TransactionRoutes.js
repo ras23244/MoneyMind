@@ -21,5 +21,6 @@ router.get("/financial-summary", protect, TransactionController.getFinancialSumm
 router.get("/category-breakdown", protect, TransactionController.getCategoryBreakdown);
 router.get("/spending-heatmap", protect, TransactionController.getSpendingHeatmap);
 router.get("/trend-data", protect, TransactionController.getTrendData);
+router.get('/get-account-transactions/:accountId', protect, TransactionController.getAccountTransactions);
 
 module.exports = router;

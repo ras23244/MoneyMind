@@ -403,3 +403,16 @@ exports.getFinancialSummary = async (req, res) => {
         return res.status(500).json({ success: false, message: "Server error" });
     }
 };
+
+
+exports.getAccountTransactions  = async(req,res)=>{
+    try{
+        const {accountId} = req.params;
+        const userId = req.user.id;
+
+        const transactions = await Transaction.find({userId, accountId});
+        res.status(200).json({success:true, data: transactions});
+    } catch (err) {
+        res.status(500).json({success:false, error: err.message});
+    }
+}

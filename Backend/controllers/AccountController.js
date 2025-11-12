@@ -4,6 +4,7 @@ const TransactionModel = require('../models/TransactionModel');
 
 exports.linkBankAccount = async (req, res) => {
     const { email, bankName, accountNumber } = req.body;
+    console.log("linkBankAccount called with:", req.body);
 
     if (!email || !bankName || !accountNumber) {
         return res.status(400).json({ message: 'All fields are required' });
