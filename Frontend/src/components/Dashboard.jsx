@@ -133,6 +133,15 @@ export default function Dashboard() {
             }));
     }, [financialSummary, transactions]);
 
+    console.log("transactions from dashboard", transactions)
+
+    const recentTransactions = transactions
+        .slice() // create a copy (to avoid mutating original array)
+        .sort((a, b) => new Date(b.date) - new Date(a.date)) // sort descending by date
+        .slice(0, 5);
+
+    console.log("recentTransactions", recentTransactions);
+
 
     // Use backend-calculated heatmap data
     const heatmap = spendingHeatmap;
@@ -476,10 +485,9 @@ export default function Dashboard() {
             <section aria-labelledby="activity-heading" className="mb-10">
                 <h2 id="activity-heading" className="text-sm font-medium text-slate-300 mb-3">Activity</h2>
                 <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
-                    {/* UPDATED: TransactionList component now spans 2 columns (lg:col-span-2) */}
                     <div className="lg:col-span-2">
                         <TransactionList
-                            transactions={transactions.slice(0, 5)}
+                            transactions={recentTransactions}
                             expanded={false}
                             onToggleExpand={() => navigate('/transactions')}
                             onNavigate={() => navigate('/transactions')}

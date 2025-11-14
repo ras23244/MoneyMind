@@ -71,8 +71,8 @@ export default function ImportCSVDialog({ open, setOpen }) {
                         <AlertCircle className="w-5 h-5 flex-shrink-0 text-blue-400 mt-0.5" />
                         <div className="text-sm text-blue-200">
                             <p className="font-medium mb-1">CSV Format Required</p>
-                            <p>Please use this format: Date, Description, Amount, Category</p>
-                            <p className="mt-1 text-xs">Example: 2025-11-11, Grocery, 500, Food</p>
+                            <p>Please use this format: Date, Description, Amount,Type, Category</p>
+                            <p className="mt-1 text-xs">Example: 2025-11-11, Grocery, 500,Expense, Food</p>
                         </div>
                     </div>
 

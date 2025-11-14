@@ -12,15 +12,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import AddGoalDialog from "./AddGoalDialog";
 import GoalMoneyDialog from "./GoalMoneyDialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import Confetti from "react-confetti";
 import GoalsFilter from "./GoalsFilter";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+
 export default function GoalsPanel({ formatCurrency }) {
     const { user } = useUser();
     const { data: goals = [], isLoading, isError, error } = useGoals(user?._id);
-   
-
     const createGoalMutation = useCreateGoal(user?._id);
     const updateGoalMutation = useUpdateGoal(user?._id);
     const deleteGoalMutation = useDeleteGoal(user?._id);
@@ -30,6 +30,8 @@ export default function GoalsPanel({ formatCurrency }) {
     const [showConfetti, setShowConfetti] = useState(false);
     const [goalMoneyDialog, setGoalMoneyDialog] = useState({ open: false, goal: null, type: "add" });
     const [editingGoal, setEditingGoal] = useState(null);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [goalToDelete, setGoalToDelete] = useState(null);
 
     const [goalFilters, setGoalFilters] = useState({ status: "", priority: "", progress: "", search: "" });
 
@@ -126,6 +128,20 @@ export default function GoalsPanel({ formatCurrency }) {
         }
     };
 
+    const confirmDeleteGoal = () => {
+        if (!goalToDelete) return;
+        deleteGoalMutation.mutate(goalToDelete._id, {
+            onSuccess: () => {
+                toast.success("Goal deleted.", { autoClose: 4000 });
+                setShowDeleteConfirm(false);
+                setGoalToDelete(null);
+            },
+            onError: (err) => {
+                toast.error(`Failed to delete goal: ${err.message || err}`, { autoClose: 5000 });
+            }
+        });
+    };
+
     if (isLoading) {
         return <p className="text-white text-center">Loading goals...</p>;
     }
@@ -190,7 +206,7 @@ export default function GoalsPanel({ formatCurrency }) {
                                                     <DropdownMenuItem className="hover:bg-white/10 rounded-xl" onClick={() => setGoalMoneyDialog({ open: true, goal, type: "add" })}>Add Money</DropdownMenuItem>
                                                     <DropdownMenuItem className="hover:bg-white/10 rounded-xl" onClick={() => setGoalMoneyDialog({ open: true, goal, type: "withdraw" })}>Withdraw Money</DropdownMenuItem>
                                                     <DropdownMenuItem className="hover:bg-white/10 rounded-xl" onClick={() => { setEditingGoal(goal); setOpenDialog(true); }}>Edit Goal</DropdownMenuItem>
-                                                    <DropdownMenuItem className="hover:bg-white/10 rounded-xl" onClick={() => deleteGoalMutation.mutate(goal._id)}>Delete Goal</DropdownMenuItem>
+                                                    <DropdownMenuItem className="hover:bg-white/10 rounded-xl" onClick={() => { setGoalToDelete(goal); setShowDeleteConfirm(true); }}>Delete Goal</DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </div>
@@ -230,6 +246,22 @@ export default function GoalsPanel({ formatCurrency }) {
                 type={goalMoneyDialog.type}
                 onSubmit={handleMoneyChange}
             />
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+                <DialogContent className="bg-[#242124] border border-white/10 text-white max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>Delete Goal</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <p className="text-sm text-white/70">Are you sure you want to delete the goal "{goalToDelete?.title}"? This action cannot be undone.</p>
+                        <div className="flex gap-2">
+                            <Button variant="outline" onClick={() => { setShowDeleteConfirm(false); setGoalToDelete(null); }} className="flex-1">Cancel</Button>
+                            <Button onClick={confirmDeleteGoal} className="flex-1 bg-red-600 hover:bg-red-700">Delete</Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

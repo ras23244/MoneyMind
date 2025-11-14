@@ -6,6 +6,7 @@ import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import AddBudgetDialog from "./AddBudgetDialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import BudgetProgressCard from "./BudgetProgressCard";
 import BudgetBreakdownChart from "./BudgetBreakdownChart";
 import MonthlyBudgetCard from "./MonthlyBudgetCard";
@@ -44,6 +45,8 @@ export default function Budgets() {
     const [selectedMonth, setSelectedMonth] = useState(dayjs().format("YYYY-MM"));
     const [showHistory, setShowHistory] = useState(false);
     const [showDisposableModal, setShowDisposableModal] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [budgetToDelete, setBudgetToDelete] = useState(null);
 
     const budgetsWithSpent = useMemo(() => {
         const transactionsLookup = transactions.reduce((map, tx) => {
@@ -196,7 +199,18 @@ export default function Budgets() {
     };
 
     const handleDeleteBudget = (id) => {
-        deleteBudgetMutation.mutate(id);
+        setBudgetToDelete(id);
+        setShowDeleteConfirm(true);
+    };
+
+    const confirmDeleteBudget = () => {
+        if (!budgetToDelete) return;
+        deleteBudgetMutation.mutate(budgetToDelete, {
+            onSuccess: () => {
+                setShowDeleteConfirm(false);
+                setBudgetToDelete(null);
+            },
+        });
     };
 
     // 🔹 Clear all filters
@@ -373,6 +387,21 @@ export default function Budgets() {
                 setOpen={setOpenDialog}
                 onSave={handleAddBudget}
             />
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+                <DialogContent className="bg-[#242124] border border-white/10 text-white max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>Delete Budget</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <p className="text-sm text-white/70">Are you sure you want to delete this budget? This action cannot be undone.</p>
+                        <div className="flex gap-2">
+                            <Button variant="outline" onClick={() => { setShowDeleteConfirm(false); setBudgetToDelete(null); }} className="flex-1">Cancel</Button>
+                            <Button onClick={confirmDeleteBudget} className="flex-1 bg-red-600 hover:bg-red-700">Delete</Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

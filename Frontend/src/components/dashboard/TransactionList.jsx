@@ -2,7 +2,8 @@ const currency = (n) =>
     new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
 
 export default function TransactionList({ transactions, expanded, onToggleExpand, onNavigate }) {
-    const displayTransactions = expanded ? transactions : transactions.slice(0, 5);
+    console.log("transactions", transactions)
+    const displayTransactions = expanded ? transactions : transactions;
 
     return (
         <div className="lg:col-span-2 bg-white/5 rounded-lg p-4 border border-white/6 transition-shadow hover:shadow-lg">
@@ -13,10 +14,9 @@ export default function TransactionList({ transactions, expanded, onToggleExpand
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggleExpand(); } }}
                 className="flex items-center justify-between mb-5 group cursor-pointer"
             >
-                <h3 className="font-semibold">Recent Transactions</h3>
+                <h3 className="font-semibold">Transactions</h3>
                 <div className="flex items-center gap-3">
                     <div className="text-xs text-slate-400">{expanded ? `Showing ${transactions.length}` : 'Showing last 5'}</div>
-                   
                 </div>
             </div>
             <div className="space-y-3">
