@@ -245,9 +245,71 @@ exports.getCategoryBreakdown = async (req, res) => {
     }
 };
 
+exports.getCategoryAggregation = async (req, res) => {
+    try {
+        const userId = new mongoose.Types.ObjectId(req.user.id);
+        const { range, start, end } = req.query;
+
+        let startDate;
+        let endDate = dayjs().endOf('day');
+
+        if (start && end) {
+            startDate = dayjs(start).startOf('day');
+            endDate = dayjs(end).endOf('day');
+        } else {
+            switch (range) {
+                case '3M':
+                    startDate = dayjs().startOf('month').subtract(2, 'month');
+                    break;
+                case '6M':
+                    startDate = dayjs().startOf('month').subtract(5, 'month');
+                    break;
+                case '1M':
+                default:
+                    startDate = dayjs().startOf('month');
+            }
+        }
+
+        const s = startDate.startOf('day').toDate();
+        const e = endDate.endOf('day').toDate();
+
+        // Aggregate overall category totals in range (using Date types)
+        const overall = await Transaction.aggregate([
+            { $match: { userId, date: { $gte: s, $lte: e }, type: 'expense' } },
+            { $group: { _id: { $ifNull: ['$category', 'Other'] }, total: { $sum: '$amount' } } },
+            { $project: { name: '$_id', value: { $abs: '$total' }, _id: 0 } },
+            { $sort: { value: -1 } }
+        ]);
+
+        // Aggregate month-category totals to compute month-wise top category
+        const monthCat = await Transaction.aggregate([
+            { $match: { userId, date: { $gte: s, $lte: e }, type: 'expense' } },
+            { $project: { month: { $dateToString: { format: '%Y-%m', date: '$date' } }, category: { $ifNull: ['$category', 'Other'] }, amount: { $abs: '$amount' } } },
+            { $group: { _id: { month: '$month', category: '$category' }, total: { $sum: '$amount' } } },
+            { $project: { month: '$_id.month', category: '$_id.category', total: 1, _id: 0 } },
+            { $sort: { month: 1, total: -1 } }
+        ]);
+
+        // Build month-wise top
+        const monthMap = {};
+        monthCat.forEach((r) => {
+            if (!monthMap[r.month]) monthMap[r.month] = [];
+            monthMap[r.month].push({ name: r.category, value: r.total });
+        });
+
+        const months = Object.keys(monthMap).sort();
+        const monthwise = months.map((m) => ({ month: m, top: monthMap[m][0] || { name: '—', value: 0 }, all: monthMap[m] }));
+
+        res.status(200).json({ success: true, data: { overall, monthwise } });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
 exports.getSpendingHeatmap = async (req, res) => {
     try {
-   
+
         const userId = new mongoose.Types.ObjectId(req.user.id);
         const startDate = dayjs().subtract(27, 'days').startOf('day').toDate();
 
@@ -405,14 +467,14 @@ exports.getFinancialSummary = async (req, res) => {
 };
 
 
-exports.getAccountTransactions  = async(req,res)=>{
-    try{
-        const {accountId} = req.params;
+exports.getAccountTransactions = async (req, res) => {
+    try {
+        const { accountId } = req.params;
         const userId = req.user.id;
 
-        const transactions = await Transaction.find({userId, accountId});
-        res.status(200).json({success:true, data: transactions});
+        const transactions = await Transaction.find({ userId, accountId });
+        res.status(200).json({ success: true, data: transactions });
     } catch (err) {
-        res.status(500).json({success:false, error: err.message});
+        res.status(500).json({ success: false, error: err.message });
     }
 }

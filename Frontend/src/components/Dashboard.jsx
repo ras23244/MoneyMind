@@ -12,6 +12,7 @@ import {
     Cell,
 } from 'recharts';
 import AddBillDialog from './dashboard/AddBillDialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useUser } from "../context/UserContext";
 import { useTransactions } from "./hooks/useTransactions";
 import { useBudgets } from "./hooks/useBudgets";
@@ -28,6 +29,7 @@ import { useCreateGoal } from "./hooks/useGoals";
 import dayjs from "dayjs";
 import NotesPanel from './NotesPanel';
 import CategoryBreakdown from './dashboard/CategoryBreakdown';
+import CategoryModal from './dashboard/CategoryModal';
 import TransactionList from './dashboard/TransactionList';
 import BudgetsList from './dashboard/BudgetsList';
 import GoalsList from './dashboard/GoalsList';
@@ -38,6 +40,7 @@ import {
     useSpendingHeatmap,
     useTrendData
 } from './hooks/useAggregatedData';
+import { useCategoryAggregation } from './hooks/useAggregatedData';
 
 const currency = (n) =>
     new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
@@ -95,6 +98,27 @@ export default function Dashboard() {
     const categoryBreakdown = categoryBreakdownData;
     const trendData = monthlyTrends;
 
+    // Category breakdown UI state (for quick view and modal)
+    const [catRange, setCatRange] = useState('1M'); // '1M' | '3M' | '6M' | 'custom'
+    const [catModalOpen, setCatModalOpen] = useState(false);
+    const [customStart, setCustomStart] = useState(dayjs().startOf('month').format('YYYY-MM-DD'));
+    const [customEnd, setCustomEnd] = useState(dayjs().endOf('month').format('YYYY-MM-DD'));
+
+    // Client-side fallback aggregation (in case backend returns empty)
+    const aggregateFromTxs = (txs, start, end) => {
+        const map = {};
+        (txs || []).forEach((t) => {
+            if (!t.date) return;
+            const d = dayjs(t.date).startOf('day');
+            if (d.isBefore(dayjs(start).startOf('day')) || d.isAfter(dayjs(end).endOf('day'))) return;
+            const amt = Math.abs(Number(t.amount || 0));
+            if (!amt) return;
+            const cat = t.category || t.description || 'Other';
+            map[cat] = (map[cat] || 0) + amt;
+        });
+        return Object.keys(map).map(k => ({ name: k, value: map[k] })).sort((a, b) => b.value - a.value);
+    };
+
     // Budgets UI mapping (use available spent/amount values)
     const budgetsUi = useMemo(() => budgets.map(b => ({
         name: b.category || 'Other',
@@ -132,6 +156,21 @@ export default function Dashboard() {
                 amount: Math.abs(Number(t.amount || 0)),
             }));
     }, [financialSummary, transactions]);
+
+    const { data: currentAgg = { overall: [], monthwise: [] }, isLoading: currentAggLoading } = useCategoryAggregation(user?._id, { range: '1M' });
+    const { data: modalAgg = { overall: [], monthwise: [] }, isLoading: modalAggLoading } = useCategoryAggregation(user?._id, catRange === 'custom' ? { start: customStart, end: customEnd } : { range: catRange });
+
+    const currentRangeStart = dayjs().startOf('month');
+    const currentRangeEnd = dayjs().endOf('month');
+    const fallbackCurrent = aggregateFromTxs(transactions, currentRangeStart, currentRangeEnd);
+
+    let modalRangeStart;
+    let modalRangeEnd = dayjs().endOf('day');
+    if (catRange === '1M') modalRangeStart = dayjs().startOf('month');
+    else if (catRange === '3M') modalRangeStart = dayjs().startOf('month').subtract(2, 'month');
+    else if (catRange === '6M') modalRangeStart = dayjs().startOf('month').subtract(5, 'month');
+    else modalRangeStart = dayjs(customStart);
+    const fallbackModalOverall = aggregateFromTxs(transactions, modalRangeStart, modalRangeEnd);
 
     console.log("transactions from dashboard", transactions)
 
@@ -497,8 +536,38 @@ export default function Dashboard() {
                     {/* UPDATED: Category Breakdown component now spans 2 columns (lg:col-span-2) */}
                     <div className="lg:col-span-2">
                         <div className="bg-slate-800/40 rounded-lg p-4 border border-white/6">
-                            <h3 className="font-semibold mb-3">Spending by Category</h3>
-                            <CategoryBreakdown categoryBreakdown={categoryBreakdown} monthlyExpenses={monthlyExpenses} />
+                            <div className="flex items-center justify-between">
+                                <h3 className="font-semibold">Spending by Category</h3>
+                                <div className="flex items-center gap-2">
+                                    <div className="text-sm text-slate-400">Showing: Current month</div>
+                                    <button onClick={() => setCatModalOpen(true)} className="px-3 py-1 bg-slate-700/40 rounded text-sm text-white">See more</button>
+                                </div>
+                            </div>
+                            <div className="mt-3">
+                                {currentAggLoading ? (
+                                    <div className="text-sm text-slate-400">Loading category breakdown...</div>
+                                ) : (currentAgg.overall && currentAgg.overall.length) ? (
+                                    <CategoryBreakdown categoryBreakdown={currentAgg.overall} monthlyExpenses={currentAgg.overall.reduce((s, c) => s + c.value, 0) || monthlyExpenses} />
+                                ) : (fallbackCurrent && fallbackCurrent.length) ? (
+                                    <CategoryBreakdown categoryBreakdown={fallbackCurrent} monthlyExpenses={fallbackCurrent.reduce((s, c) => s + c.value, 0) || monthlyExpenses} />
+                                ) : (
+                                    <div className="text-sm text-slate-400">No category spending data available for this period.</div>
+                                )}
+                            </div>
+                            <CategoryModal
+                                open={catModalOpen}
+                                setOpen={setCatModalOpen}
+                                catRange={catRange}
+                                setCatRange={setCatRange}
+                                customStart={customStart}
+                                customEnd={customEnd}
+                                setCustomStart={setCustomStart}
+                                setCustomEnd={setCustomEnd}
+                                modalAgg={modalAgg}
+                                modalAggLoading={modalAggLoading}
+                                fallbackOverall={fallbackModalOverall}
+                                monthlyExpenses={monthlyExpenses}
+                            />
                         </div>
                     </div>
 

@@ -63,3 +63,26 @@ export const useTrendData = (userId) => {
         staleTime: 5 * 60 * 1000,
     });
 };
+
+export const useCategoryAggregation = (userId, { range = '1M', start, end } = {}) => {
+    const token = localStorage.getItem('token');
+    return useQuery({
+        queryKey: ['categoryAggregation', userId, range, start, end],
+        queryFn: async () => {
+            const params = {};
+            if (start && end) {
+                params.start = start;
+                params.end = end;
+            } else {
+                params.range = range;
+            }
+            const response = await axios.get(`${BASE_URL}transactions/category-aggregation`, {
+                params,
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            return response.data.data;
+        },
+        enabled: !!userId && !!token,
+        staleTime: 5 * 60 * 1000,
+    });
+};

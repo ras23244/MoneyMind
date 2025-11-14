@@ -19,6 +19,7 @@ router.get("/financial-summary", protect, TransactionController.getFinancialSumm
 
 // New aggregation endpoints
 router.get("/category-breakdown", protect, TransactionController.getCategoryBreakdown);
+router.get("/category-aggregation", protect, TransactionController.getCategoryAggregation);
 router.get("/spending-heatmap", protect, TransactionController.getSpendingHeatmap);
 router.get("/trend-data", protect, TransactionController.getTrendData);
 router.get('/get-account-transactions/:accountId', protect, TransactionController.getAccountTransactions);
