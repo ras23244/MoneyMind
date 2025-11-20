@@ -7,6 +7,8 @@ import { useUser } from "../context/UserContext";
 import AddTransactionDialog from "./AddTransactionDialog";
 import { useEditTransaction } from "./hooks/useEditTransaction";
 import { useDeleteTransaction } from "./hooks/useDeleteTransaction";
+import ImportCSVDialog from "./dialogs/ImportCSVDialog";
+import { Button } from "@/components/ui/button";
 import TransactionDetailsPanel from "./TransactionDetailsPanel";
 import TransactionTrendsChart from "./TransactionTrendsChart";
 import TransactionCalendar from "./TransactionCalendar";
@@ -27,6 +29,7 @@ export default function TransactionsPanel({ selectedDate, setSelectedDate, forma
     const [search, setSearch] = useState("");
     const [editing, setEditing] = useState(null);
     const [openDialog, setOpenDialog] = useState(false);
+    const [openImportDialog, setOpenImportDialog] = useState(false);
     const [limit, setLimit] = useState(3);
     const [selectedTag, setSelectedTag] = useState(null);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
@@ -79,10 +82,10 @@ export default function TransactionsPanel({ selectedDate, setSelectedDate, forma
         });
     }, [search, allTransactions, selectedDate]);
 
-  
+
     const { mainChartData, drilldownChartData } = useTransactionBreakdown(allTransactions, selectedTag);
 
-    
+
     if (trendsLoading || txLoading) {
         return <p className="text-white">Loading financial data...</p>;
     }
@@ -93,6 +96,11 @@ export default function TransactionsPanel({ selectedDate, setSelectedDate, forma
 
     return (
         <>
+            <div className="flex items-center justify-end mb-4">
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => setOpenImportDialog(true)}>
+                    Import CSV
+                </Button>
+            </div>
             {/* Trends + Calendar */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <TransactionTrendsChart data={transactionTrendData} />
@@ -140,6 +148,7 @@ export default function TransactionsPanel({ selectedDate, setSelectedDate, forma
                     setOpenDialog(false);
                 }}
             />
+            <ImportCSVDialog open={openImportDialog} setOpen={setOpenImportDialog} />
         </>
     );
 }
