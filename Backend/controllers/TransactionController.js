@@ -68,7 +68,6 @@ exports.getTransactionById = async (req, res) => {
     }
 };
 
-
 exports.updateTransaction = async (req, res) => {
     try {
         const { description, amount, type, category, note, tags, date } = req.body;
@@ -253,22 +252,19 @@ exports.getCategoryAggregation = async (req, res) => {
         let startDate;
         let endDate = dayjs().endOf('day');
 
-        if (start && end) {
-            startDate = dayjs(start).startOf('day');
-            endDate = dayjs(end).endOf('day');
-        } else {
-            switch (range) {
-                case '3M':
-                    startDate = dayjs().startOf('month').subtract(2, 'month');
-                    break;
-                case '6M':
-                    startDate = dayjs().startOf('month').subtract(5, 'month');
-                    break;
-                case '1M':
-                default:
-                    startDate = dayjs().startOf('month');
-            }
+
+        switch (range) {
+            case '3M':
+                startDate = dayjs().startOf('month').subtract(2, 'month');
+                break;
+            case '6M':
+                startDate = dayjs().startOf('month').subtract(5, 'month');
+                break;
+            case '1M':
+            default:
+                startDate = dayjs().startOf('month');
         }
+
 
         const s = startDate.startOf('day').toDate();
         const e = endDate.endOf('day').toDate();
@@ -308,6 +304,7 @@ exports.getCategoryAggregation = async (req, res) => {
 };
 
 exports.getSpendingHeatmap = async (req, res) => {
+
     try {
 
         const userId = new mongoose.Types.ObjectId(req.user.id);
@@ -476,5 +473,50 @@ exports.getAccountTransactions = async (req, res) => {
         res.status(200).json({ success: true, data: transactions });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
+    }
+}
+
+exports.bulkCreateTransactions = async (req, res) => {
+    try {
+        const { transactions } = req.body;
+
+        if (!Array.isArray(transactions) || transactions.length === 0) {
+            return res.status(400).json({ success: false, message: 'transactions array is required' });
+        }
+
+        const docs = transactions.map((t) => {
+            const date = t.date ? new Date(t.date) : new Date();
+            return {
+                userId: req.user.id,
+                accountId: t.bankAccountId || t.accountId || t.accountId || null,
+                description: t.description || '',
+                note: t.note || '',
+                amount: Number(t.amount) || 0,
+                merchant: t.merchant || '',
+                type: (t.type || 'expense').toLowerCase().startsWith('inc') ? 'income' : 'expense',
+                category: t.category || 'Uncategorized',
+                source: t.source || 'manual',
+                tags: Array.isArray(t.tags) ? t.tags : (t.tags ? [t.tags] : []),
+                date,
+            };
+        });
+
+        try {
+            const inserted = await Transaction.insertMany(docs, { ordered: false });
+            return res.status(201).json({ success: true, inserted: inserted.length, data: inserted });
+        } catch (bulkErr) {
+            const inserted = bulkErr.insertedDocs || bulkErr.result?.getInsertedIds?.() || [];
+            const insertedCount = Array.isArray(inserted) ? inserted.length : 0;
+            return res.status(207).json({
+                success: true,
+                inserted: insertedCount,
+                attempted: docs.length,
+                message: 'Partial success',
+                error: bulkErr.message,
+            });
+        }
+    } catch (error) {
+        console.error('bulkCreateTransactions error', error);
+        return res.status(500).json({ success: false, error: error.message });
     }
 }

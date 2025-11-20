@@ -11,7 +11,7 @@ export default function TransactionCalendar({ selectedDate, setSelectedDate }) {
             <CardContent>
                 <Calendar
                     mode="single"
-                    selected={selectedDate}
+                    selected={selectedDate ?? new Date()}
                     onSelect={(d) => d && setSelectedDate(d)}
                     className="w-full bg-transparent text-white border-0"
                 />

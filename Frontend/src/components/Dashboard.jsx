@@ -94,7 +94,6 @@ export default function Dashboard() {
         return (monthlyIncome || 0) - totalBudgetAmount;
     }, [budgets, monthlyIncome]);
 
-    // Use backend-calculated data directly
     const categoryBreakdown = categoryBreakdownData;
     const trendData = monthlyTrends;
 
@@ -104,7 +103,6 @@ export default function Dashboard() {
     const [customStart, setCustomStart] = useState(dayjs().startOf('month').format('YYYY-MM-DD'));
     const [customEnd, setCustomEnd] = useState(dayjs().endOf('month').format('YYYY-MM-DD'));
 
-    // Client-side fallback aggregation (in case backend returns empty)
     const aggregateFromTxs = (txs, start, end) => {
         const map = {};
         (txs || []).forEach((t) => {
@@ -119,21 +117,18 @@ export default function Dashboard() {
         return Object.keys(map).map(k => ({ name: k, value: map[k] })).sort((a, b) => b.value - a.value);
     };
 
-    // Budgets UI mapping (use available spent/amount values)
     const budgetsUi = useMemo(() => budgets.map(b => ({
         name: b.category || 'Other',
         spent: Number(b.spent) || 0,
         limit: Number(b.amount) || 0,
     })), [budgets]);
 
-    // Goals UI mapping
     const goalsUi = useMemo(() => goals.map(g => ({
         name: g.title || g.name || 'Goal',
         current: Number(g.currentAmount ?? g.current) || 0,
         target: Number(g.targetAmount ?? g.target) || 0,
     })), [goals]);
 
-    // Accounts UI mapping
     const accountsUi = useMemo(() => accounts.map(a => ({
         name: a.name || a.bankName || 'Account',
         balance: Number(a.balance) || 0,
@@ -141,7 +136,6 @@ export default function Dashboard() {
         lastSync: a.lastSync || '—',
     })), [accounts]);
 
-    // Upcoming bills: prefer backend summary, else infer from transactions with "bill" category
     const billsUi = useMemo(() => {
         if (financialSummary.upcomingBills && financialSummary.upcomingBills.length) {
             return financialSummary.upcomingBills;
@@ -175,23 +169,21 @@ export default function Dashboard() {
     console.log("transactions from dashboard", transactions)
 
     const recentTransactions = transactions
-        .slice() // create a copy (to avoid mutating original array)
-        .sort((a, b) => new Date(b.date) - new Date(a.date)) // sort descending by date
+        .slice() 
+        .sort((a, b) => new Date(b.date) - new Date(a.date)) 
         .slice(0, 5);
 
     console.log("recentTransactions", recentTransactions);
 
 
-    // Use backend-calculated heatmap data
     const heatmap = spendingHeatmap;
-
+    console.log("Heatmap data:", heatmap);
     const _defaultHeatmap = Array.from({ length: 4 }, () => Array.from({ length: 7 }, () => 0));
     const heatmapRows = Array.isArray(heatmap) && heatmap.length === 4 && heatmap.every(r => Array.isArray(r) && r.length === 7)
         ? heatmap
         : _defaultHeatmap;
 
 
-    // Insights simple rules
     const insights = useMemo(() => {
         const res = [];
         if (monthlyExpenses > monthlyIncome * 0.6) res.push('You spent a large portion of your income this month — consider trimming non-essential spends.');
@@ -201,19 +193,6 @@ export default function Dashboard() {
         return res;
     }, [monthlyExpenses, monthlyIncome, monthlySavings, categoryBreakdown, budgetsUi]);
 
-    // CSV export
-    const exportCSV = () => {
-        const rows = [['Date', 'Description', 'Category', 'Amount', 'Account']];
-        transactions.forEach(t => rows.push([t.date || '', t.description || t.desc || t.note || '', t.category || '', t.amount || 0, t.account || '']));
-        const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `transactions_${new Date().toISOString().slice(0, 10)}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
-    };
 
     const handleAddBudget = (newBudget) => {
         createBudgetMutation.mutate({
@@ -240,8 +219,6 @@ export default function Dashboard() {
     if (loading) return <div className="p-6">Loading dashboard...</div>;
     if (!user) return <div className="p-6">Please log in to view dashboard.</div>;
 
-    // Normalize data for BalanceCards: prefer backend-provided summary but
-    // fall back to local-calculated values when needed.
     const balanceData = {
         totalBalance: financialSummary.totalBalance ?? totalBalance,
         monthlyIncome: financialSummary.monthlyIncome ?? monthlyIncome,
@@ -262,9 +239,7 @@ export default function Dashboard() {
                     <h1 className="text-2xl font-semibold text-slate-100">Overview</h1>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <button onClick={exportCSV} className="px-3 py-2 bg-emerald-500 hover:bg-emerald-600 rounded-md text-white text-sm">Export CSV</button>
-                </div>
+
             </div>
 
             {/* Overview Cards */}
@@ -600,10 +575,10 @@ export default function Dashboard() {
                                                 <div
                                                     key={`${weekIndex}-${dayIndex}`}
                                                     className={`group flex flex-col items-center justify-center rounded-lg ${bgColor}
-                  p-2 sm:p-3 min-h-[60px] transition-all duration-200 border border-white/5 text-center
-                  hover:scale-105 hover:border-emerald-400/30 hover:shadow-md hover:shadow-emerald-500/10 hover:brightness-110
+                                                        p-2 sm:p-3 min-h-[60px] transition-all duration-200 border border-white/5 text-center
+                                                        hover:scale-105 hover:border-emerald-400/30 hover:shadow-md hover:shadow-emerald-500/10 hover:brightness-110
                 `}
-                                                >
+                                        >
                                                     <span className="text-[11px] text-slate-300 leading-tight group-hover:text-emerald-300 transition-colors duration-200">
                                                         {label}
                                                     </span>

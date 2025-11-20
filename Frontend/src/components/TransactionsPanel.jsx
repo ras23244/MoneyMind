@@ -14,8 +14,7 @@ import TransactionBreakdownChart from "./TransactionBreakdownChart";
 import TransactionsList from "./TransactionList";
 import { useTransactionBreakdown } from "./hooks/useTransactionBreakdown";
 
-// Helper function for date comparison
-// CORRECTED: Use local time methods instead of UTC methods
+
 const isSameDay = (d1, d2) => {
     return (
         d1.getFullYear() === d2.getFullYear() &&
@@ -61,7 +60,7 @@ export default function TransactionsPanel({ selectedDate, setSelectedDate, forma
         deleteTransactionMutation.mutate(_id);
     };
 
-    // 🔹 Filter transactions using a memoized function
+
     const filteredTransactions = useMemo(() => {
         const dateToShow = selectedDate || new Date();
         const searchLower = search.toLowerCase();
@@ -80,10 +79,10 @@ export default function TransactionsPanel({ selectedDate, setSelectedDate, forma
         });
     }, [search, allTransactions, selectedDate]);
 
-    // 🔹 Pie chart data using custom hook
+  
     const { mainChartData, drilldownChartData } = useTransactionBreakdown(allTransactions, selectedTag);
 
-    // Consolidated loading and error state
+    
     if (trendsLoading || txLoading) {
         return <p className="text-white">Loading financial data...</p>;
     }
