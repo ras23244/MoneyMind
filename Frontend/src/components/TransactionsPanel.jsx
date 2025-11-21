@@ -96,7 +96,8 @@ export default function TransactionsPanel({ selectedDate, setSelectedDate, forma
 
     return (
         <>
-            <div className="flex items-center justify-end mb-4">
+            <div className="flex items-center justify-between mb-4">
+                <p className="text-2xl font-bold text-white">Transactions</p>
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => setOpenImportDialog(true)}>
                     Import CSV
                 </Button>

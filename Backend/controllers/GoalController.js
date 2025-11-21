@@ -6,7 +6,7 @@ const { validationResult } = require("express-validator");
 exports.getGoals = async (req, res) => {
     try {
         const goals = await Goal.find({ userId: req.user.id });
-        console.log("goals from backend",goals)
+      
         res.status(200).json({ success: true, data: goals });
 
     } catch (err) {
@@ -47,7 +47,7 @@ exports.createGoal = async (req, res) => {
             endDate,
             priority: priority || 1,
         });
-        console.log("goal from backend",newGoal)
+       
         await newGoal.save();
         res.status(201).json({ success: true, data: newGoal });
     } catch (err) {

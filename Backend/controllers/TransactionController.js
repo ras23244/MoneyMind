@@ -5,6 +5,7 @@ const dayjs = require('dayjs');
 exports.createTransaction = async (req, res) => {
     try {
         const { userId, bankAccountId, description, amount, type, date, note, category, tags } = req.body;
+        console.log("Creating transaction:", { userId, bankAccountId, description, amount, type, date, note, category, tags });
 
 
         const newTransaction = await Transaction.create({
@@ -454,7 +455,7 @@ exports.getFinancialSummary = async (req, res) => {
             expensesChange: percentageChange(currentExpenses, lastExpenses),
             savingsChange: percentageChange(currentSavings, lastSavings),
         };
-        console.log("Financial Summary:", summary);
+       
 
         return res.status(200).json({ success: true, data: summary });
     } catch (err) {
