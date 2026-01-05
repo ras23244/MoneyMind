@@ -1,7 +1,7 @@
 // src/components/TransactionsPanel.jsx
 import React, { useState, useMemo } from "react";
 import * as XLSX from "xlsx";
-import { useTransactionTrends } from "./hooks/useTransactionTrends";
+// trends are now fetched inside TransactionTrendsChart
 import { useTransactions } from "./hooks/useTransactions";
 import { useUser } from "../context/UserContext";
 import AddTransactionDialog from "./AddTransactionDialog";
@@ -38,8 +38,6 @@ export default function TransactionsPanel({ selectedDate, setSelectedDate, forma
     const userId = user?._id;
 
     // Queries
-    const { data: transactionTrendData = [], isLoading: trendsLoading, error: trendsError } =
-        useTransactionTrends(userId);
     const { data: allTransactions = [], isLoading: txLoading, error: txError } = useTransactions(userId);
 
     const editTransactionMutation = useEditTransaction(userId);
@@ -86,12 +84,12 @@ export default function TransactionsPanel({ selectedDate, setSelectedDate, forma
     const { mainChartData, drilldownChartData } = useTransactionBreakdown(allTransactions, selectedTag);
 
 
-    if (trendsLoading || txLoading) {
+    if (txLoading) {
         return <p className="text-white">Loading financial data...</p>;
     }
 
-    if (trendsError || txError) {
-        return <p className="text-red-500">Error loading data. Trends: {trendsError?.message}, Transactions: {txError?.message}</p>;
+    if (txError) {
+        return <p className="text-red-500">Error loading transactions: {txError?.message}</p>;
     }
 
     return (
@@ -104,7 +102,7 @@ export default function TransactionsPanel({ selectedDate, setSelectedDate, forma
             </div>
             {/* Trends + Calendar */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <TransactionTrendsChart data={transactionTrendData} />
+                <TransactionTrendsChart userId={userId} />
                 <TransactionCalendar selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
             </div>
 

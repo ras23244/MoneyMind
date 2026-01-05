@@ -1,25 +1,31 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
-export const useTransactionTrends = (userId, range = 30) => {
-    return useQuery({
-        queryKey: ["transactionTrends", userId, range],
+// params may include: range, startDate, endDate, granularity, page, limit
+export const useTransactionTrends = (userId, params = { range: 30 }) => {
+    const [pagination, setPagination] = useState(null);
+
+    const query = useQuery({
+        queryKey: ["transactionTrends", userId, params],
         enabled: !!userId,
         queryFn: async () => {
-            const res = await axios.get(
-                `${import.meta.env.VITE_BASE_URL}transactions/trends`,
-                {
-                    params: { range },
-                    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-                }
-            );
-            return res.data;
+            const res = await axios.get(`${import.meta.env.VITE_BASE_URL}transactions/trends`, {
+                params,
+                headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+            });
+            // server returns { success: true, data: [...], pagination: {...} }
+            setPagination(res.data.pagination || null);
+            return res.data.data || [];
         },
-        // 🚀 Set data as fresh for 10 minutes (trends change less frequently)
+        // trends can be considered fresh for a bit
         staleTime: 10 * 60 * 1000,
+        gcTime: 30 * 60 * 1000,
         refetchOnWindowFocus: false,
         refetchOnMount: false,
         refetchOnReconnect: false,
         onError: (err) => console.error("❌ [QUERY ERROR trends]:", err),
     });
+
+    return { ...query, pagination };
 };

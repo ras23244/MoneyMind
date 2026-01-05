@@ -16,6 +16,7 @@ export const useFinancialSummary = (userId) => {
             return res.data.data || {};
         },
         staleTime: 5 * 60 * 1000,
+        gcTime: 30 * 60 * 1000,
         refetchOnWindowFocus: false,
         refetchOnMount: false,
         refetchOnReconnect: false,

@@ -17,6 +17,7 @@ export const useTransactions = (userId) => {
         },
         // 🚀 Set data as fresh for 5 minutes (no background fetch on switch/refocus)
         staleTime: 5 * 60 * 1000,
+        gcTime: 30 * 60 * 1000,
         refetchOnWindowFocus: false,
         refetchOnMount: false,
         refetchOnReconnect: false,

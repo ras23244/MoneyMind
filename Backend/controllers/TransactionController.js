@@ -145,49 +145,114 @@ exports.filterTransactions = async (req, res) => {
 exports.getTransactionTrends = async (req, res) => {
     try {
         const userId = req.user.id;
-        const { range = 30 } = req.query;
+        const { startDate, endDate, granularity = 'day', page = 1, limit = 100, range } = req.query;
 
-        if (!userId) {
-            return res.status(400).json({ message: "userId is required" });
+        if (!userId) return res.status(400).json({ message: 'userId is required' });
+
+        let start;
+        let end;
+
+        if (startDate && endDate) {
+            start = new Date(startDate);
+            end = new Date(endDate);
+        } else if (range) {
+            // backward compatible: range is number of days
+            const days = parseInt(range, 10) || 30;
+            end = new Date();
+            start = new Date();
+            start.setDate(start.getDate() - days);
+        } else {
+            // default last 30 days
+            end = new Date();
+            start = new Date();
+            start.setDate(start.getDate() - 30);
         }
 
-        const sinceDate = new Date();
-        sinceDate.setDate(sinceDate.getDate() - parseInt(range));
+        const pageNum = Math.max(1, parseInt(page, 10) || 1);
+        const limitNum = Math.min(Math.max(1, parseInt(limit, 10) || 1000), 2000);
 
-        const trends = await Transaction.aggregate([
-            {
-                $match: {
-                    userId: new mongoose.Types.ObjectId(userId),
-                    date: { $gte: sinceDate }
-                }
+        const userObjectId = new mongoose.Types.ObjectId(userId);
+
+        // Choose grouping expression based on granularity
+        let groupIdExpr;
+        let projectDateExpr;
+
+        switch (granularity) {
+            case 'month':
+                groupIdExpr = { $dateToString: { format: '%Y-%m', date: '$date' } };
+                projectDateExpr = { $dateToString: { format: '%Y-%m', date: '$date' } };
+                break;
+            case 'week':
+                // Use dateTrunc to week if available; fall back to day grouping if not
+                groupIdExpr = { $dateTrunc: { date: '$date', unit: 'week' } };
+                projectDateExpr = { $dateToString: { format: '%Y-%m-%d', date: '$$ROOT._id' } };
+                break;
+            case 'day':
+            default:
+                groupIdExpr = { $dateToString: { format: '%Y-%m-%d', date: '$date' } };
+                projectDateExpr = { $dateToString: { format: '%Y-%m-%d', date: '$date' } };
+        }
+
+        const matchStage = {
+            $match: {
+                userId: userObjectId,
+                date: { $gte: start, $lte: end },
             },
-            {
-                $group: {
-                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
-                    income: {
-                        $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] }
-                    },
-                    expenses: {
-                        $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] }
-                    }
-                }
+        };
+
+        const pipeline = [matchStage];
+
+        // Grouping
+        pipeline.push({
+            $group: {
+                _id: groupIdExpr,
+                income: { $sum: { $cond: [{ $eq: ['$type', 'income'] }, '$amount', 0] } },
+                expenses: { $sum: { $cond: [{ $eq: ['$type', 'expense'] }, '$amount', 0] } },
             },
-            {
+        });
+
+        // Project fields and compute net
+        if (granularity === 'week') {
+            pipeline.push({
                 $project: {
-                    date: "$_id",
+                    date: { $dateToString: { format: '%Y-%m-%d', date: '$_id' } },
                     income: 1,
                     expenses: 1,
-                    net: { $subtract: ["$income", "$expenses"] },
-                    _id: 0
-                }
-            },
-            { $sort: { date: 1 } }
-        ]);
+                    net: { $subtract: ['$income', '$expenses'] },
+                    _id: 0,
+                },
+            });
+        } else {
+            pipeline.push({
+                $project: {
+                    date: '$_id',
+                    income: 1,
+                    expenses: 1,
+                    net: { $subtract: ['$income', '$expenses'] },
+                    _id: 0,
+                },
+            });
+        }
 
-        res.json(trends);
+        pipeline.push({ $sort: { date: 1 } });
+
+        // Pagination of result buckets
+        pipeline.push({
+            $facet: {
+                metadata: [{ $count: 'total' }],
+                data: [{ $skip: (pageNum - 1) * limitNum }, { $limit: limitNum }],
+            },
+        });
+
+        const result = await Transaction.aggregate(pipeline);
+
+        const metadata = result[0]?.metadata[0] || { total: 0 };
+        const data = result[0]?.data || [];
+
+        res.json({ success: true, data, pagination: { total: metadata.total || 0, page: pageNum, limit: limitNum, pages: Math.ceil((metadata.total || 0) / limitNum) } });
     } catch (error) {
-        console.error("Error in getTransactionTrends:", error);
-        res.status(500).json({ message: "Error fetching trends" });
+        console.error('Error in getTransactionTrends:', error);
+        res.status(500).json({ message: 'Error fetching trends' });
     }
 };
 
@@ -455,7 +520,7 @@ exports.getFinancialSummary = async (req, res) => {
             expensesChange: percentageChange(currentExpenses, lastExpenses),
             savingsChange: percentageChange(currentSavings, lastSavings),
         };
-       
+
 
         return res.status(200).json({ success: true, data: summary });
     } catch (err) {

@@ -33,7 +33,7 @@ export default function BudgetsFilter({ filters, setFilters, categories = [], mo
                 ))}
             </select>
 
-            
+
 
             {/* Duration Type Filter */}
             <select

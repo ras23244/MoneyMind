@@ -14,7 +14,8 @@ export const useFinancialSummary = (userId) => {
             return response.data.data;
         },
         enabled: !!userId && !!token,
-        staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+        staleTime: 5 * 60 * 1000,
+        gcTime: 30 * 60 * 1000, // Consider data fresh for 5 minutes
     });
 };
 
@@ -31,6 +32,7 @@ export const useCategoryBreakdown = (userId, period = 'month') => {
         },
         enabled: !!userId && !!token,
         staleTime: 5 * 60 * 1000,
+        gcTime: 30 * 60 * 1000,
     });
 };
 
@@ -46,6 +48,7 @@ export const useSpendingHeatmap = (userId) => {
         },
         enabled: !!userId && !!token,
         staleTime: 5 * 60 * 1000,
+        gcTime: 30 * 60 * 1000,
     });
 };
 
@@ -61,6 +64,7 @@ export const useTrendData = (userId) => {
         },
         enabled: !!userId && !!token,
         staleTime: 5 * 60 * 1000,
+        gcTime: 30 * 60 * 1000,
     });
 };
 
@@ -84,5 +88,6 @@ export const useCategoryAggregation = (userId, { range = '1M', start, end } = {}
         },
         enabled: !!userId && !!token,
         staleTime: 5 * 60 * 1000,
+        gcTime: 30 * 60 * 1000,
     });
 };

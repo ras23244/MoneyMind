@@ -54,9 +54,9 @@ export default function BalanceCards({
                         <ArrowUpRight className="w-4 h-4 text-green-400" />
                         <span className="text-[13px] text-white">Income</span>
                     </div>
-                   
+
                     <p className="text-base md:text-lg font-semibold text-green-400 leading-tight">
-                        {isBalanceVisible?formatCurrency(financialSummary.monthlyIncome):"••••••"}
+                        {isBalanceVisible ? formatCurrency(financialSummary.monthlyIncome) : "••••••"}
                     </p>
                     <p className="text-s text-green-400/70 mt-1">
                         {formatPercentage(financialSummary.incomeChange)} from last month
@@ -72,7 +72,7 @@ export default function BalanceCards({
                         <span className="text-[13px] text-white">Expenses</span>
                     </div>
                     <p className="text-base md:text-lg font-semibold text-red-400 leading-tight">
-                        {isBalanceVisible?formatCurrency(financialSummary.monthlyExpenses):"••••••"}
+                        {isBalanceVisible ? formatCurrency(financialSummary.monthlyExpenses) : "••••••"}
                     </p>
                     <p className="text-s text-red-400/70 mt-1">
                         {formatPercentage(financialSummary.expensesChange)} from last month
@@ -88,7 +88,7 @@ export default function BalanceCards({
                         <span className="text-[13px] text-white">Savings</span>
                     </div>
                     <p className="text-base md:text-lg font-semibold text-blue-400 leading-tight">
-                        {isBalanceVisible?formatCurrency(financialSummary.monthlySavings):"••••••"}
+                        {isBalanceVisible ? formatCurrency(financialSummary.monthlySavings) : "••••••"}
                     </p>
                     <p className="text-s text-blue-400/70 mt-1">
                         {formatPercentage(financialSummary.savingsChange)} from last month
