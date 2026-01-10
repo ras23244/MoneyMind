@@ -2,11 +2,12 @@ const express = require('express');
 const Goal = require('../models/Goal');
 const mongoose = require('mongoose');
 const { validationResult } = require("express-validator");
+const notify = require('../utils/notify');
 
 exports.getGoals = async (req, res) => {
     try {
         const goals = await Goal.find({ userId: req.user.id });
-      
+
         res.status(200).json({ success: true, data: goals });
 
     } catch (err) {
@@ -47,32 +48,32 @@ exports.createGoal = async (req, res) => {
             endDate,
             priority: priority || 1,
         });
-       
+
         await newGoal.save();
+       
         res.status(201).json({ success: true, data: newGoal });
     } catch (err) {
         console.log(err);
         res.status(500).json({ success: false, error: err.message });
-        
+
     }
 }
 
 
 exports.updateGoal = async (req, res) => {
     try {
-        const {id } = req.params;
+        const { id } = req.params;
         const updates = req.body;
-     
+       
         const goal = await Goal.findOneAndUpdate(
             { _id: id, userId: req.user.id },
             updates,
-            { new: true, runValidators: true }
+            { new: true }
         );
-
         if (!goal) {
             return res.status(404).json({ success: false, error: "Goal not found" });
-        }
-
+        } 
+    
         res.status(200).json({ success: true, data: goal });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -89,6 +90,7 @@ exports.deleteGoal = async (req, res) => {
         if (!goal) {
             return res.status(404).json({ success: false, error: "Goal not found" });
         }
+       
 
         res.status(200).json({ success: true, message: "Goal deleted successfully" });
     } catch (err) {

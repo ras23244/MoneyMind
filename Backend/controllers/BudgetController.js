@@ -1,5 +1,7 @@
 const Budget = require('../models/Budget');
 const Transaction = require('../models/TransactionModel');
+const mongoose = require('mongoose');
+const notify = require('../utils/notify');
 
 exports.getBudgets = async (req, res) => {
     try {
@@ -40,38 +42,61 @@ exports.getBudgets = async (req, res) => {
         // Fetch budgets
         const budgets = await Budget.find(filter).sort({ createdAt: -1 });
 
-        // Compute 'spent' dynamically if not stored
-        const budgetsWithSpent = await Promise.all(
-            budgets.map(async (b) => {
-                const match = {
-                    userId,
-                    type: "expense",
-                    category: b.category,
-                };
+        // Compute 'spent' in bulk using aggregation to avoid N queries.
+        if (!budgets || budgets.length === 0) {
+            return res.json({ success: true, data: [] });
+        }
 
-                if (b.durationType === "day") {
-                    const day = new Date(b.day);
-                    match.date = {
-                        $gte: new Date(day.setHours(0, 0, 0)),
-                        $lt: new Date(day.setHours(23, 59, 59)),
-                    };
-                } else {
-                    const monthStart = new Date(`${b.month}-01`);
-                    match.date = {
-                        $gte: monthStart,
-                        $lt: new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1),
-                    };
-                }
+        const monthlyBudgets = budgets.filter((b) => b.durationType !== "day");
+        const dayBudgets = budgets.filter((b) => b.durationType === "day");
 
-                const spent = await Transaction.aggregate([
-                    { $match: match },
-                    { $group: { _id: null, total: { $sum: "$amount" } } },
+        const monthlyMap = new Map();
+        const dayMap = new Map();
+
+        // Aggregate monthly budgets: group by category and year-month
+        if (monthlyBudgets.length > 0) {
+            const categories = [...new Set(monthlyBudgets.map((b) => b.category))];
+            const months = [...new Set(monthlyBudgets.map((b) => b.month))];
+
+            if (categories.length > 0 && months.length > 0) {
+                const monthlyAgg = await Transaction.aggregate([
+                    { $match: { userId: new mongoose.Types.ObjectId(userId), type: "expense", category: { $in: categories } } },
+                    { $addFields: { monthStr: { $dateToString: { format: "%Y-%m", date: "$date" } } } },
+                    { $match: { monthStr: { $in: months } } },
+                    { $group: { _id: { category: "$category", month: "$monthStr" }, total: { $sum: "$amount" } } },
                 ]);
 
-                b.spent = spent[0]?.total || b.spent || 0;
-                return b;
-            })
-        );
+                monthlyAgg.forEach((d) => {
+                    monthlyMap.set(`${d._id.category}:${d._id.month}`, d.total);
+                });
+            }
+        }
+
+        // Aggregate daily budgets: group by category and exact day
+        if (dayBudgets.length > 0) {
+            const categories = [...new Set(dayBudgets.map((b) => b.category))];
+            const days = [...new Set(dayBudgets.map((b) => b.day))];
+
+            if (categories.length > 0 && days.length > 0) {
+                const dayAgg = await Transaction.aggregate([
+                    { $match: { userId: new mongoose.Types.ObjectId(userId), type: "expense", category: { $in: categories } } },
+                    { $addFields: { dayStr: { $dateToString: { format: "%Y-%m-%d", date: "$date" } } } },
+                    { $match: { dayStr: { $in: days } } },
+                    { $group: { _id: { category: "$category", day: "$dayStr" }, total: { $sum: "$amount" } } },
+                ]);
+
+                dayAgg.forEach((d) => {
+                    dayMap.set(`${d._id.category}:${d._id.day}`, d.total);
+                });
+            }
+        }
+
+        const budgetsWithSpent = budgets.map((b) => {
+            const key = b.durationType === "day" ? `${b.category}:${b.day}` : `${b.category}:${b.month}`;
+            const value = b.durationType === "day" ? dayMap.get(key) : monthlyMap.get(key);
+            b.spent = value || b.spent || 0;
+            return b;
+        });
 
         res.json({ success: true, data: budgetsWithSpent });
     } catch (err) {
@@ -98,6 +123,14 @@ exports.createBudget = async (req, res) => {
             durationType: durationType || "month", // "month" or "day"
             day: durationType === "day" ? day : undefined,
         });
+        await notify({
+            userId: req.user.id,
+            type: 'budget_created',
+            title: 'New budget created',
+            body: `Budget for ${category} set to ${amount}`,
+            data: { budgetId: budget._id.toString(), category },
+            priority: 'low'
+        });
         res.status(201).json({ success: true, data: budget });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -115,8 +148,24 @@ exports.updateBudget = async (req, res) => {
             { category, amount, spent, month, duration, durationType, day: durationType === "day" ? day : undefined },
             { new: true }
         );
-        res.json({ success: true, data: budget });
+       
+
+        if (!budget) {
+            return res.status(404).json({ success: false, error: "Budget not found" });
+        }
+        await notify({
+            userId: req.user.id,
+            type: 'budget_updated',
+            title: 'Budget updated',
+            body: `Budget for ${category || budget.category} updated to ${amount || budget.amount}`,
+            data: { budgetId: budget._id.toString() },
+            priority: 'low'
+        });
+        // Return the updated budget so the frontend mutation receives fresh data
+        return res.json({ success: true, data: budget });
+
     } catch (err) {
+        console.error("Error updating budget:", err);
         res.status(500).json({ success: false, error: err.message });
     }
 };

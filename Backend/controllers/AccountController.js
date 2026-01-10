@@ -1,6 +1,7 @@
 const UserModel = require('../models/UserModel');
 const AccountModel = require('../models/AccountModel');
 const TransactionModel = require('../models/TransactionModel');
+const notify = require('../utils/notify');
 
 exports.linkBankAccount = async (req, res) => {
     const { email, bankName, accountNumber } = req.body;
@@ -36,6 +37,14 @@ exports.linkBankAccount = async (req, res) => {
             message: 'Bank account linked successfully',
             user: updatedUser,
         });
+        await notify({
+            userId: user._id.toString(),
+            type: 'account_linked',
+            title: 'Account linked',
+            body: `${bankName} account linked successfully`,
+            data: { accountId: newAccount._id.toString() },
+            priority: 'medium'
+        });
     } catch (error) {
         console.error('Error linking bank account:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -62,6 +71,14 @@ exports.unlinkAccount = async (req, res) => {
 
         if (!accountToRemove) {
             return res.status(404).json({ message: "Account not found" });
+            await notify({
+                userId: user._id.toString(),
+                type: 'account_unlinked',
+                title: 'Account unlinked',
+                body: `${accountToRemove.bankName} account unlinked`,
+                data: { accountId: accountToRemove._id.toString() },
+                priority: 'low'
+            });
         }
 
         user.bankAccounts = user.bankAccounts.filter(

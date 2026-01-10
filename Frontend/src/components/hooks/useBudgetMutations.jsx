@@ -29,6 +29,7 @@ export const useUpdateBudget = (userId, month) => {
                 budget,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
+            console.log("Update budget response:", res);
             return res.data.data;
         },
         onSuccess: () => {

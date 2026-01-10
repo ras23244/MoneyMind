@@ -24,6 +24,7 @@ import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards";
 import { useFinancialSummary } from "../components/hooks/useFinancialSummary";
 import { transactionTrendData, financialGoals, connectedBanks } from "@/data/financeData";
 import Dashboard from "../components/Dashboard";
+import NotificationBell from "../components/NotificationBell";
 
 export default function FinanceDashboard() {
     const { user, loading } = useUser();
@@ -120,103 +121,13 @@ export default function FinanceDashboard() {
                             <p className="text-white/60 mt-1">Here's your financial overview</p>
                         </div>
                         <div className="flex items-center gap-3">
-                            <Button variant="outline" size="sm" className="border-white/20 text-white"><Bell className="w-4 h-4 mr-2" />Notifications</Button>
+                            <NotificationBell />
                             <Button size="sm" className="bg-white text-black hover:bg-white/90" onClick={() => setOpen(true)}><Plus className="w-4 h-4 mr-2" />Add Transaction</Button>
                         </div>
                     </div>
 
                     {/* Overview */}
                     {activeTab ==="overview" && <Dashboard/>}
-                    {/* {activeTab === "overview" && (
-                        <div className="space-y-6">
-                            <BalanceCards
-                                financialSummary={financialSummary}
-                                isBalanceVisible={isBalanceVisible}
-                                setIsBalanceVisible={setIsBalanceVisible}
-                                formatCurrency={formatCurrency}
-                            />
-
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                <div className="lg:col-span-2 space-y-6">
-                                    {dailyBudgets.length > 0 ? (
-                                        <div className="bg-[#1e1e1e] rounded-2xl shadow p-2 h-[max-content]">
-                                            <h2 className="text-lg font-semibold mb-2">Daily Budgets</h2>
-                                            <InfiniteMovingCards
-                                                items={dailyBudgets.map((budget) => {
-                                                    const percent = budget.amount > 0 ? Math.round((budget.spent / budget.amount) * 100) : 0;
-                                                    let status = "On Track";
-                                                    if (percent >= 100) status = "Exceeded";
-                                                    else if (percent >= 80) status = "Near Limit";
-                                                    return {
-                                                        quote: (
-                                                            <BudgetProgressCircle
-                                                                key={budget._id}
-                                                                title={budget.category}
-                                                                status={status}
-                                                                percentage={percent}
-                                                            />
-                                                        ),
-                                                        name: '',
-                                                        title: '',
-                                                    };
-                                                })}
-                                                direction="left"
-                                                speed="normal"
-                                                pauseOnHover={true}
-                                                className="max-w-full"
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div className="rounded-2xl shadow p-4">
-                                            <h2 className="text-lg font-semibold mb-4">Cash Flow Overview</h2>
-                                            <CashFlowChart />
-                                        </div>
-                                    )}
-                                    {dailyBudgets.length > 0 && (
-                                        <div className="rounded-2xl shadow p-4">
-                                            <h2 className="text-lg font-semibold mb-4">Cash Flow Overview</h2>
-                                            <CashFlowChart />
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="lg:col-span-1 space-y-6">
-                                    <div className="bg-[#1e1e1e] rounded-2xl shadow p-4 flex flex-col h-[500px]">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <h2 className="text-lg font-semibold">Insights</h2>
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={() => setShowNotes((prev) => !prev)}
-                                            >
-                                                {showNotes ? "Notes" : "Notes"}
-                                            </Button>
-                                        </div>
-                                        {showNotes ? (
-                                            <NotesPanel />
-                                        ) : (
-                                            <div className="overflow-y-auto flex-1 pr-1">
-                                                <ul className="space-y-2 text-sm">
-                                                    <li className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
-                                                        ⚠️ You’ve already spent 80% of your Food budget.
-                                                    </li>
-                                                    <li className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                                                        🎉 You saved ₹10,000 this month – 20% more than usual!
-                                                    </li>
-                                                    <li className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
-                                                        🔮 Forecast: You may overspend on Shopping next month.
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="bg-[#1e1e1e] rounded-2xl shadow p-4">
-                                        <h2 className="text-lg font-semibold mb-4">Monthly Budget Status</h2>
-                                        <BudgetStatus initialCategories={budgetStatusCategories} />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )} */}
 
                     {activeTab === "accounts" && <Accounts connectedBanks={connectedBanks} />}
                     {activeTab === "goals" && <GoalsPanel formatCurrency={formatCurrency} financialGoals={financialGoals} />}

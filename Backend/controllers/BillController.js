@@ -1,5 +1,6 @@
 const Bill = require('../models/BillModel');
 const dayjs = require('dayjs');
+const notify = require('../utils/notify');
 
 exports.createBill = async (req, res) => {
     try {
@@ -46,7 +47,14 @@ exports.createBill = async (req, res) => {
         };
 
         const bill = await Bill.create(billData);
-
+        await notify({
+            userId,
+            type: 'bill_created',
+            title: 'New bill added',
+            body: `${title} due ${dayjs(bill.nextDueDate || bill.dueDate).format('MMM D')}`,
+            data: { billId: bill._id.toString() },
+            priority: 'low'
+        });
         res.status(201).json({
             success: true,
             data: bill
@@ -137,6 +145,14 @@ exports.updateBillStatus = async (req, res) => {
         // If marking as paid
         if (status === 'paid') {
             // Update payment history
+            await notify({
+                userId,
+                type: 'bill_paid',
+                title: 'Bill paid',
+                body: `${bill.title} marked as paid`,
+                data: { billId: bill._id.toString() },
+                priority: 'low'
+            });
             bill.paymentHistory.push({
                 date: new Date(),
                 amount: bill.amount,

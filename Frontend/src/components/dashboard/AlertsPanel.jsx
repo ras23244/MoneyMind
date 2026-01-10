@@ -1,9 +1,34 @@
 import React, { useMemo } from 'react';
 import dayjs from 'dayjs';
+import { useUser } from '../../context/UserContext';
 
 export default function AlertsPanel({ transactions = [], billsUi = [], budgetsUi = [], goalsUi = [], financialSummary = {}, currency = (n) => n }) {
+    const { notifications = [] } = useUser();
     const alerts = useMemo(() => {
         const list = [];
+
+        // Add high-priority socket notifications (unread only)
+        (notifications || []).forEach((notif) => {
+            if (notif.priority === 'high' && !notif.read) {
+                const iconMap = {
+                    budget_threshold: '⚠️',
+                    bill_due: '💳',
+                    bill_overdue: '🚨',
+                    goal_progress: '🎯',
+                    transaction_anomaly: '⚠️',
+                    account_linked: '🔗',
+                };
+                list.push({
+                    id: `notif-${notif.id}`,
+                    icon: iconMap[notif.type] || '📢',
+                    title: notif.title,
+                    text: notif.body,
+                    priority: 'high',
+                    color: 'bg-red-200 text-red-800',
+                    ts: new Date(notif.createdAt).getTime(),
+                });
+            }
+        });
 
         (billsUi || []).forEach((b) => {
             if (!b.due) return;
@@ -123,7 +148,7 @@ export default function AlertsPanel({ transactions = [], billsUi = [], budgetsUi
         const priorityOrder = { high: 0, medium: 1, positive: 2, low: 3 };
         list.sort((a, b) => (b.ts || 0) - (a.ts || 0) || ((priorityOrder[a.priority] ?? 4) - (priorityOrder[b.priority] ?? 4)));
         return list;
-    }, [transactions, billsUi, budgetsUi, goalsUi, financialSummary, currency]);
+    }, [transactions, billsUi, budgetsUi, goalsUi, financialSummary, currency, notifications]);
 
     if (!alerts.length) return <div className="text-slate-400">No alerts right now — your finances look stable.</div>;
 

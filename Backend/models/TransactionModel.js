@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const transactionSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User', 
+        ref: 'User',
         required: true,
     },
     accountId: {
@@ -16,7 +16,7 @@ const transactionSchema = new mongoose.Schema({
         trim: true,
         required: [true, 'Please add a description'],
     },
-    note:{
+    note: {
         type: String,
         trim: true,
     },
@@ -25,7 +25,7 @@ const transactionSchema = new mongoose.Schema({
         type: Number,
         required: [true, 'Please add a positive or negative number'],
     },
-    merchant:{
+    merchant: {
         type: String,
         trim: true,
         // required: [true, 'Please add a merchant name'],for now
@@ -40,9 +40,9 @@ const transactionSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    source:{
-        type:String,
-        enum:['manual','automatic'],
+    source: {
+        type: String,
+        enum: ['manual', 'automatic'],
     },
     tags: [String],
 
@@ -51,5 +51,10 @@ const transactionSchema = new mongoose.Schema({
         default: Date.now,
     },
 });
+
+// Indexes to speed up aggregation and filter queries
+transactionSchema.index({ userId: 1, type: 1, category: 1, date: 1 });
+transactionSchema.index({ userId: 1, date: 1 });
+
 
 module.exports = mongoose.model('Transaction', transactionSchema);

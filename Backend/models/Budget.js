@@ -16,7 +16,7 @@ const budgetSchema = new mongoose.Schema({
     },
     spent: {
         type: Number,
-        required: true,
+        default: 0,
     },
     duration: { type: Number },
     durationType: { type: String, enum: ["month", "day"], default: "month" },
@@ -31,5 +31,11 @@ const budgetSchema = new mongoose.Schema({
         default: Date.now,
     },
 });
+
+// Indexes to speed up common queries and filtering
+budgetSchema.index({ userId: 1, category: 1 });
+budgetSchema.index({ userId: 1, month: 1 });
+budgetSchema.index({ userId: 1, createdAt: 1 });
+budgetSchema.index({ amount: 1 });
 
 module.exports = mongoose.model('Budget', budgetSchema);

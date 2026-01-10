@@ -1,6 +1,7 @@
 const Transaction = require('../models/TransactionModel');
 const mongoose = require('mongoose');
 const dayjs = require('dayjs');
+const notify = require('../utils/notify');
 
 exports.createTransaction = async (req, res) => {
     try {
@@ -19,7 +20,16 @@ exports.createTransaction = async (req, res) => {
             category,
             tags
         });
-
+        if (type === 'income' && amount > 1000) {
+            await notify({
+                userId,
+                type: 'transaction_income',
+                title: 'Large deposit received',
+                body: `Received ${amount} from ${description}`,
+                data: { transactionId: newTransaction._id.toString() },
+                priority: 'medium'
+            });
+        }
         res.status(201).json({
             success: true,
             data: newTransaction
