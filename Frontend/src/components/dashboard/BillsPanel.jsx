@@ -93,8 +93,8 @@ export default function BillsPanel({ userId }) {
 
 
     return (
-        <Card className="bg-gradient-to-br from-slate-900/80 to-slate-800/60 border border-white/10 rounded-2xl shadow-lg">
-            <CardContent className="p-5 relative">
+        <Card className="bg-gradient-to-br from-slate-900/80 to-slate-800/60 border border-white/10 rounded-2xl shadow-lg h-full">
+            <CardContent className="p-5 relative flex flex-col h-full">
                 <div className="flex items-center justify-between mb-5">
                     <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                         <Wallet className="w-5 h-5 text-blue-400" />
@@ -122,15 +122,7 @@ export default function BillsPanel({ userId }) {
                     />
                 </div>
 
-                <div
-                    ref={listRef}
-                    className="relative space-y-3 overflow-y-auto"
-                    style={{
-                        maxHeight: '320px',
-                        scrollbarWidth: 'none',
-                        msOverflowStyle: 'none',
-                    }}
-                >
+                <div className="relative space-y-3 overflow-y-auto flex-1" ref={listRef}>
                     <style>{`div::-webkit-scrollbar { display: none; }`}</style>
 
                     {Object.entries(groupedBills).map(([weekStart, weekBills]) => (

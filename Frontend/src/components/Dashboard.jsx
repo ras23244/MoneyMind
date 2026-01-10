@@ -17,7 +17,7 @@ import { useUser } from "../context/UserContext";
 import { useTransactions } from "./hooks/useTransactions";
 import { useBudgets } from "./hooks/useBudgets";
 import { useGoals } from "./hooks/useGoals";
-import { useAccounts } from "./hooks/useAccounts";
+
 import { useBills, useBillSummary } from './hooks/useBills';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -31,9 +31,9 @@ import NotesPanel from './NotesPanel';
 import CategoryBreakdown from './dashboard/CategoryBreakdown';
 import CategoryModal from './dashboard/CategoryModal';
 import AlertsPanel from './dashboard/AlertsPanel';
+import InsightsPanel from './dashboard/InsightsPanel';
 import TransactionList from './dashboard/TransactionList';
-import BudgetsList from './dashboard/BudgetsList';
-import GoalsList from './dashboard/GoalsList';
+
 import BillsPanel from './dashboard/BillsPanel';
 import {
     useFinancialSummary,
@@ -49,14 +49,12 @@ const currency = (n) =>
 export default function Dashboard() {
     const { user, loading: userLoading } = useUser();
     const [showBalance, setShowBalance] = useState(true);
-    const [showNotes, setShowNotes] = useState(false);
     const [dateRange] = useState('6M');
     const navigate = useNavigate();
 
     // expandable section states
     const [budgetsExpanded, setBudgetsExpanded] = useState(false);
     const [goalsExpanded, setGoalsExpanded] = useState(false);
-    const [accountsExpanded, setAccountsExpanded] = useState(false);
     const [txExpanded, setTxExpanded] = useState(false);
     const [openBudgetDialog, setOpenBudgetDialog] = useState(false);
     const createBudgetMutation = useCreateBudget(user?._id);
@@ -68,7 +66,7 @@ export default function Dashboard() {
     const { data: transactions = [], isLoading: txLoading } = useTransactions(user?._id);
     const { data: budgets = [], isLoading: budgetsLoading } = useBudgets(user?._id, {});
     const { data: goals = [], isLoading: goalsLoading } = useGoals(user?._id);
-    const { data: accounts = [], isLoading: accountsLoading } = useAccounts(user?._id);
+
     const { data: bills = [], isLoading: billsLoading } = useBills(user?._id, { days: 30 });
     const { data: billsSummary = {}, isLoading: billsSummaryLoading } = useBillSummary(user?._id);
     const { data: financialSummary = {}, isLoading: summaryLoading } = useFinancialSummary(user?._id);
@@ -79,7 +77,7 @@ export default function Dashboard() {
     const { data: monthlyTrends = [], isLoading: trendsLoading } = useTrendData(user?._id);
 
     const loading = userLoading || txLoading || budgetsLoading || goalsLoading ||
-        accountsLoading || summaryLoading || categoryBreakdownLoading ||
+        summaryLoading || categoryBreakdownLoading ||
         spendingHeatmapLoading || trendsLoading || billsLoading || billsSummaryLoading;
 
     const {
@@ -130,12 +128,7 @@ export default function Dashboard() {
         target: Number(g.targetAmount ?? g.target) || 0,
     })), [goals]);
 
-    const accountsUi = useMemo(() => accounts.map(a => ({
-        name: a.name || a.bankName || 'Account',
-        balance: Number(a.balance) || 0,
-        type: a.type || a.accountType || 'Account',
-        lastSync: a.lastSync || '—',
-    })), [accounts]);
+
 
     const billsUi = useMemo(() => {
         if (financialSummary.upcomingBills && financialSummary.upcomingBills.length) {
@@ -232,9 +225,9 @@ export default function Dashboard() {
     };
 
     return (
-        <div className="p-4 max-w-[1300px] mx-auto">
+        <div className="p-4 max-w-[1300px] mx-auto min-h-0">
 
-            {/* Top: Actions + Header */}
+
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                 <div>
                     <h1 className="text-2xl font-semibold text-slate-100">Overview</h1>
@@ -243,7 +236,7 @@ export default function Dashboard() {
 
             </div>
 
-            {/* Overview Cards */}
+
             <section aria-labelledby="overview-heading" className="mb-8">
                 <BalanceCards
                     financialSummary={balanceData}
@@ -253,113 +246,50 @@ export default function Dashboard() {
                 />
             </section>
 
-            {/* Insights & Visuals - BillsPanel is now here */}
+
             <section aria-labelledby="insights-heading" className="mb-8">
                 <h2 id="insights-heading" className="text-sm font-medium text-slate-300 mb-3">Insights & Analysis</h2>
-                <div className="grid grid-cols-1 lg:grid-cols-[1.8fr_1.1fr_1.1fr] gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-[1.8fr_1.1fr_1.1fr] gap-6 h-[520px] min-h-0">
 
-                    <BillsPanel userId={user?._id} onNavigate={() => navigate('/bills')} />
+                    {/* Bills column - constrained height, internal scrolling handled by BillsPanel */}
+                    <div className="h-full min-h-0 overflow-hidden">
+                        <BillsPanel userId={user?._id} onNavigate={() => navigate('/bills')} />
+                    </div>
 
-                    <div className="bg-slate-800/40 rounded-lg p-4 border border-white/6">
-                        <div className="flex items-center justify-between mb-3">
-                            <h3 className="font-semibold">Notes & Insights</h3>
-                            <Button size="sm" variant="outline" onClick={() => setShowNotes((s) => !s)}>{showNotes ? "Hide" : "Notes"}</Button>
-                        </div>
+                    {/* Notes and Insights stacked in the middle column; both scroll independently */}
+                    <div className="flex flex-col gap-3 h-full min-h-0">
+                        <div className="bg-slate-800/40 rounded-lg p-4 border border-white/6 flex flex-col min-h-0">
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="font-semibold">Notes</h3>
+                            </div>
 
-                        <div className="min-h-[220px]">
-                            {showNotes ? (
+                            <div className="flex-1 min-h-0 overflow-y-auto">
                                 <NotesPanel />
-                            ) : (
-                                <div className="space-y-3 text-sm">
-                                    {insights.length ? (
-                                        <ul className="list-disc list-inside text-slate-300">
-                                            {insights.map((ins, i) => <li key={i}>{ins}</li>)}
-                                        </ul>
-                                    ) : (
-                                        <div className="text-slate-400">No insights currently. Check back later.</div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="bg-slate-800/40 rounded-lg p-4 border border-white/6">
-                        <h3 className="font-semibold mb-3">Alerts</h3>
-                        <AlertsPanel
-                            transactions={transactions}
-                            billsUi={billsUi}
-                            budgetsUi={budgetsUi}
-                            goalsUi={goalsUi}
-                            financialSummary={financialSummary}
-                            currency={currency}
-                        />
-                    </div>
-                </div>
-            </section>
-
-            {/* Goals / Budgets / Accounts (reordered to show goals first) */}
-            <section aria-labelledby="planning-heading" className="mb-8">
-                <h2 id="planning-heading" className="text-sm font-medium text-slate-300 mb-3">Planning</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <GoalsList
-                        goals={goalsUi}
-                        expanded={goalsExpanded}
-                        onToggleExpand={() => setGoalsExpanded(s => !s)}
-                        onAddGoal={() => setOpenGoalDialog(true)}
-                    />
-
-                    <BudgetsList
-                        budgets={budgetsUi}
-                        expanded={budgetsExpanded}
-                        onToggleExpand={() => setBudgetsExpanded(s => !s)}
-                        onAddBudget={() => setOpenBudgetDialog(true)}
-                    />
-
-                    <div className="bg-slate-800/40 rounded-lg p-4 border border-white/6 transition-shadow hover:shadow-lg">
-                        <div
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => setAccountsExpanded((s) => !s)}
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setAccountsExpanded((s) => !s); } }}
-                            className="flex items-center justify-between mb-3 group cursor-pointer"
-                        >
-                            <h3 className="font-semibold">Accounts</h3>
-                            <div className="flex items-center gap-2">
-                                <button onClick={(e) => { e.stopPropagation(); navigate('/accounts'); }} title="Manage accounts" className="p-1 rounded hover:bg-white/5">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 12h18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
-                                </button>
-                                <button onClick={(e) => { e.stopPropagation(); setAccountsExpanded((s) => !s); }} className="p-1 rounded hover:bg-white/5">
-                                    {accountsExpanded ? (
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M18 15l-6-6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                                    ) : (
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                                    )}
-                                </button>
                             </div>
                         </div>
-                        <div className="space-y-3">
-                            {(accountsExpanded ? accountsUi : accountsUi.slice(0, 3)).map((a) => (
-                                <div key={a.name} className="flex justify-between items-center transition-colors hover:bg-white/5 rounded p-2">
-                                    <div>
-                                        <div className="text-sm font-medium">{a.name}</div>
-                                        <div className="text-xs text-slate-400">{a.type} • {a.lastSync}</div>
-                                    </div>
-                                    <div className="text-sm font-semibold">{currency(a.balance)}</div>
-                                </div>
-                            ))}
+
+                        <div className="bg-slate-800/40 rounded-lg p-3 border border-white/6 overflow-auto" style={{ maxHeight: '400px' }}>
+                            <InsightsPanel budgets={budgetsUi} goals={goalsUi} currency={currency} />
                         </div>
-                        <div className="mt-4 flex gap-2">
-                            <button onClick={() => navigate('/accounts/link')} className="px-3 py-2 bg-emerald-500 rounded text-white text-sm flex items-center gap-2">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M10 14l6-6M4 20l4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                                Link
-                            </button>
-                            <button onClick={() => navigate('/accounts')} className="px-3 py-2 bg-transparent border border-white/10 rounded text-white text-sm">Manage</button>
+                    </div>
+
+                    {/* Alerts column - fixed height for the row, alerts scroll internally */}
+                    <div className="bg-slate-800/40 rounded-lg p-4 border border-white/6 flex flex-col min-h-0">
+                        <h3 className="font-semibold mb-3">Alerts</h3>
+                        <div className="flex-1 min-h-0 overflow-y-auto">
+                            <AlertsPanel
+                                transactions={transactions}
+                                billsUi={billsUi}
+                                budgetsUi={budgetsUi}
+                                goalsUi={goalsUi}
+                                financialSummary={financialSummary}
+                                currency={currency}
+                            />
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* Activity: Transactions, Category Breakdown, Heatmap */}
             <section aria-labelledby="activity-heading" className="mb-10">
                 <h2 id="activity-heading" className="text-sm font-medium text-slate-300 mb-3">Activity</h2>
                 <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
@@ -372,7 +302,6 @@ export default function Dashboard() {
                         />
                     </div>
 
-                    {/* UPDATED: Category Breakdown component now spans 2 columns (lg:col-span-2) */}
                     <div className="lg:col-span-2">
                         <div className="bg-slate-800/40 rounded-lg p-4 border border-white/6">
                             <div className="flex items-center justify-between">
@@ -410,7 +339,6 @@ export default function Dashboard() {
                         </div>
                     </div>
 
-                    {/* Spending Heatmap expanded to 3 columns for better visibility */}
                     <div className="lg:col-span-3">
                         <div className="bg-slate-800/60 rounded-xl p-4 border border-white/10 shadow-md max-w-[850px] mx-auto">
                             <h3 className="font-semibold mb-4 text-slate-100 text-lg text-center">

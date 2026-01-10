@@ -86,66 +86,66 @@ export default function NotesPanel() {
             )}
 
             {/* Notes List */}
-            <div className="overflow-y-auto flex-1 pr-1 max-h-60">
+            <div className="overflow-y-auto flex-1 pr-1">
                 {notes.length === 0 ? (
                     <p className="text-sm text-gray-400">No notes yet.</p>
                 ) : (
-                        <ul className="space-y-2 text-sm">
-                            {notes.map((note) => (
-                                <li
-                                    key={note._id}
-                                    className="p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 shadow-sm flex justify-between items-center group"
-                                >
-                                    {editingId === note._id ? (
-                                        <div className="flex items-center gap-2 flex-1">
-                                            <input
-                                                type="text"
-                                                value={editingContent}
-                                                onChange={(e) => setEditingContent(e.target.value)}
-                                                className="flex-1 px-2 py-1 text-sm rounded-lg border border-white/20 bg-white/10 backdrop-blur-md text-white"
-                                            />
+                    <ul className="space-y-2 text-sm">
+                        {notes.map((note) => (
+                            <li
+                                key={note._id}
+                                className="p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 shadow-sm flex justify-between items-center group"
+                            >
+                                {editingId === note._id ? (
+                                    <div className="flex items-center gap-2 flex-1">
+                                        <input
+                                            type="text"
+                                            value={editingContent}
+                                            onChange={(e) => setEditingContent(e.target.value)}
+                                            className="flex-1 px-2 py-1 text-sm rounded-lg border border-white/20 bg-white/10 backdrop-blur-md text-white"
+                                        />
+                                        <Button
+                                            size="icon"
+                                            className="h-7 w-7"
+                                            onClick={() => handleSaveEdit(note._id)}
+                                        >
+                                            <Check className="w-4 h-4" />
+                                        </Button>
+                                        <Button
+                                            size="icon"
+                                            variant="outline"
+                                            className="h-7 w-7"
+                                            onClick={handleCancelEdit}
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <span className="text-white">{note.content}</span>
+                                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                             <Button
                                                 size="icon"
-                                                className="h-7 w-7"
-                                                onClick={() => handleSaveEdit(note._id)}
+                                                variant="ghost"
+                                                className="h-7 w-7 text-yellow-400 hover:text-yellow-300"
+                                                onClick={() => handleStartEdit(note)}
                                             >
-                                                <Check className="w-4 h-4" />
+                                                <Pencil className="w-4 h-4" />
                                             </Button>
                                             <Button
                                                 size="icon"
-                                                variant="outline"
-                                                className="h-7 w-7"
-                                                onClick={handleCancelEdit}
+                                                variant="ghost"
+                                                className="h-7 w-7 text-red-400 hover:text-red-300"
+                                                onClick={() => handleDeleteNote(note._id)}
                                             >
-                                                <X className="w-4 h-4" />
+                                                <Trash2 className="w-4 h-4" />
                                             </Button>
                                         </div>
-                                    ) : (
-                                        <>
-                                            <span className="text-white">{note.content}</span>
-                                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                                <Button
-                                                    size="icon"
-                                                    variant="ghost"
-                                                    className="h-7 w-7 text-yellow-400 hover:text-yellow-300"
-                                                    onClick={() => handleStartEdit(note)}
-                                                >
-                                                    <Pencil className="w-4 h-4" />
-                                                </Button>
-                                                <Button
-                                                    size="icon"
-                                                    variant="ghost"
-                                                    className="h-7 w-7 text-red-400 hover:text-red-300"
-                                                    onClick={() => handleDeleteNote(note._id)}
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </Button>
-                                            </div>
-                                        </>
-                                    )}
-                                </li>
-                            ))}
-                        </ul>
+                                    </>
+                                )}
+                            </li>
+                        ))}
+                    </ul>
                 )}
             </div>
         </div>
