@@ -251,18 +251,13 @@ export default function Dashboard() {
                 <h2 id="insights-heading" className="text-sm font-medium text-slate-300 mb-3">Insights & Analysis</h2>
                 <div className="grid grid-cols-1 lg:grid-cols-[1.8fr_1.1fr_1.1fr] gap-6 h-[520px] min-h-0">
 
-                    {/* Bills column - constrained height, internal scrolling handled by BillsPanel */}
                     <div className="h-full min-h-0 overflow-hidden">
                         <BillsPanel userId={user?._id} onNavigate={() => navigate('/bills')} />
                     </div>
 
-                    {/* Notes and Insights stacked in the middle column; both scroll independently */}
                     <div className="flex flex-col gap-3 h-full min-h-0">
                         <div className="bg-slate-800/40 rounded-lg p-4 border border-white/6 flex flex-col min-h-0">
-                            <div className="flex items-center justify-between mb-3">
-                                <h3 className="font-semibold">Notes</h3>
-                            </div>
-
+                          
                             <div className="flex-1 min-h-0 overflow-y-auto">
                                 <NotesPanel />
                             </div>
@@ -273,7 +268,6 @@ export default function Dashboard() {
                         </div>
                     </div>
 
-                    {/* Alerts column - fixed height for the row, alerts scroll internally */}
                     <div className="bg-slate-800/40 rounded-lg p-4 border border-white/6 flex flex-col min-h-0">
                         <h3 className="font-semibold mb-3">Alerts</h3>
                         <div className="flex-1 min-h-0 overflow-y-auto">

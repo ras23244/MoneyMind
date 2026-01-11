@@ -152,6 +152,71 @@ exports.filterTransactions = async (req, res) => {
     }
 };
 
+// Export filtered transactions as CSV
+exports.exportTransactions = async (req, res) => {
+    try {
+        const { startDate, endDate, category, tags, type, minAmount, maxAmount, search } = req.query;
+        const filter = { userId: req.user.id };
+
+        if (startDate || endDate) {
+            const s = startDate ? new Date(startDate) : new Date('1970-01-01');
+            const e = endDate ? new Date(endDate) : new Date();
+            filter.date = { $gte: s, $lte: e };
+        }
+
+        if (category) filter.category = category;
+        if (type) filter.type = type;
+        if (tags) filter.tags = { $in: tags.split(',') };
+
+        const amountFilter = {};
+        if (minAmount) amountFilter.$gte = Number(minAmount);
+        if (maxAmount) amountFilter.$lte = Number(maxAmount);
+        if (Object.keys(amountFilter).length) filter.amount = amountFilter;
+
+        if (search) {
+            const re = new RegExp(search, 'i');
+            filter.$or = [
+                { description: re },
+                { note: re },
+                { category: re },
+            ];
+        }
+
+        const transactions = await Transaction.find(filter).lean().limit(20000);
+
+
+        const headers = ['date', 'description', 'amount', 'type', 'category'];
+
+        const escape = (val) => {
+            if (val === null || typeof val === 'undefined') return '';
+            let s = String(val);
+            s = s.replace(/\"/g, '""');
+            if (s.indexOf(',') >= 0 || s.indexOf('"') >= 0 || s.indexOf('\n') >= 0) {
+                return '"' + s + '"';
+            }
+            return s;
+        };
+
+        const rows = transactions.map((t) => {
+            return headers.map((h) => {
+                if (h === 'date' && t.date) return escape(new Date(t.date).toISOString());
+                if (h === 'tags') return escape((t.tags || []).join(';'));
+                if (t[h] === undefined) return '';
+                return escape(t[h]);
+            }).join(',');
+        });
+
+        const csv = [headers.join(','), ...rows].join('\n');
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename="transactions.csv"');
+        res.status(200).send(csv);
+    } catch (error) {
+        console.error('Error exporting transactions:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
 exports.getTransactionTrends = async (req, res) => {
     try {
         const userId = req.user.id;

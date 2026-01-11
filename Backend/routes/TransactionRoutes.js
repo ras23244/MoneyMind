@@ -14,11 +14,12 @@ router.delete('/delete-transaction/:id', protect, TransactionController.deleteTr
 
 router.get('/filter-transactions', protect, TransactionController.filterTransactions);
 
+router.get('/export', protect, TransactionController.exportTransactions);
+
 router.get("/trends", protect, TransactionController.getTransactionTrends);
 
 router.get("/financial-summary", protect, TransactionController.getFinancialSummary);
 
-// New aggregation endpoints
 router.get("/category-breakdown", protect, TransactionController.getCategoryBreakdown);
 router.get("/category-aggregation", protect, TransactionController.getCategoryAggregation);
 router.get("/spending-heatmap", protect, TransactionController.getSpendingHeatmap);

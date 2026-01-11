@@ -9,7 +9,6 @@ export default function TransactionList({
     search,
     setSearch,
     formatCurrency,
-    handleExport,
     handleEdit,
     handleDelete,
     limit,
@@ -17,10 +16,8 @@ export default function TransactionList({
     setSelectedTransaction,
     selectedDate,
 }) {
-    // You can remove this console.log if you don't need it for debugging
     console.log("selectedDate in TransactionList:", selectedDate);
 
-    // This line is corrected to avoid the timezone issue
     const formattedDate = selectedDate ? new Date(selectedDate).toLocaleDateString(undefined, {
         year: 'numeric',
         month: 'long',
@@ -49,13 +46,7 @@ export default function TransactionList({
                                 className="pl-8 bg-card border-white/10 text-white"
                             />
                         </div>
-                        <Button
-                            variant="outline"
-                            onClick={handleExport}
-                            className="border-white/20 text-white"
-                        >
-                            <Download className="w-4 h-4 mr-1" /> Export
-                        </Button>
+                       
                     </div>
                 </div>
             </CardHeader>

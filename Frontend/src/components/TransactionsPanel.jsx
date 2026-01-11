@@ -1,6 +1,7 @@
 // src/components/TransactionsPanel.jsx
 import React, { useState, useMemo } from "react";
 import * as XLSX from "xlsx";
+import ExportDialog from "./dialogs/ExportDialog";
 // trends are now fetched inside TransactionTrendsChart
 import { useTransactions } from "./hooks/useTransactions";
 import { useUser } from "../context/UserContext";
@@ -30,6 +31,7 @@ export default function TransactionsPanel({ selectedDate, setSelectedDate, forma
     const [editing, setEditing] = useState(null);
     const [openDialog, setOpenDialog] = useState(false);
     const [openImportDialog, setOpenImportDialog] = useState(false);
+    const [openExportDialog, setOpenExportDialog] = useState(false);
     const [limit, setLimit] = useState(3);
     const [selectedTag, setSelectedTag] = useState(null);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
@@ -37,21 +39,17 @@ export default function TransactionsPanel({ selectedDate, setSelectedDate, forma
     const { user } = useUser();
     const userId = user?._id;
 
-    // Queries
     const { data: allTransactions = [], isLoading: txLoading, error: txError } = useTransactions(userId);
 
     const editTransactionMutation = useEditTransaction(userId);
     const deleteTransactionMutation = useDeleteTransaction(userId);
 
-    // Export to Excel
+
     const handleExport = () => {
-        const ws = XLSX.utils.json_to_sheet(filteredTransactions);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Transactions");
-        XLSX.writeFile(wb, "transactions.xlsx");
+        setOpenExportDialog(true);
     };
 
-    // Edit + Delete actions
+
     const handleEdit = (transaction) => {
         setEditing(transaction);
         setOpenDialog(true);
@@ -96,25 +94,20 @@ export default function TransactionsPanel({ selectedDate, setSelectedDate, forma
         <>
             <div className="flex items-center justify-between mb-4">
                 <p className="text-2xl font-bold text-white">Transactions</p>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => setOpenImportDialog(true)}>
-                    Import CSV
-                </Button>
+                <div className="flex gap-2">
+                    <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => setOpenImportDialog(true)}>
+                        Import CSV
+                    </Button>
+                    <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handleExport()}>
+                        Export
+                    </Button>
+                </div>
             </div>
             {/* Trends + Calendar */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <TransactionTrendsChart userId={userId} />
                 <TransactionCalendar selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
             </div>
-
-            <hr className="my-6 border-t-2 border-gray-700" />
-
-            {/* Pie Charts */}
-            {/* <TransactionBreakdownChart
-                mainChartData={mainChartData}
-                drilldownChartData={drilldownChartData}
-                selectedTag={selectedTag}
-                setSelectedTag={setSelectedTag}
-            /> */}
 
             <hr className="my-6 border-t-2 border-gray-700" />
 
@@ -148,6 +141,7 @@ export default function TransactionsPanel({ selectedDate, setSelectedDate, forma
                 }}
             />
             <ImportCSVDialog open={openImportDialog} setOpen={setOpenImportDialog} />
+            <ExportDialog open={openExportDialog} setOpen={setOpenExportDialog} />
         </>
     );
 }
