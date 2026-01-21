@@ -548,6 +548,68 @@ exports.getTrendData = async (req, res) => {
     }
 };
 
+exports.getForecast = async (req, res) => {
+    try {
+        const userObjectId = new mongoose.Types.ObjectId(req.user.id);
+        const months = parseInt(req.query.months, 10) || 3;
+        const lookback = parseInt(req.query.lookback, 10) || 6; 
+
+        const startDate = dayjs()
+            .subtract(lookback - 1, 'month')
+            .startOf('month')
+            .toDate();
+
+        const monthlyData = await Transaction.aggregate([
+            {
+                $match: {
+                    userId: userObjectId,
+                    date: { $gte: startDate }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        $dateToString: {
+                            format: "%Y-%m",
+                            date: "$date"
+                        }
+                    },
+                    income: {
+                        $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] }
+                    },
+                    expenses: {
+                        $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] }
+                    }
+                }
+            },
+            {
+                $project: {
+                    month: "$_id",
+                    net: { $subtract: ["$income", { $abs: "$expenses" }] },
+                    _id: 0
+                }
+            },
+            { $sort: { month: 1 } }
+        ]);
+
+
+        const nets = monthlyData.map((m) => m.net || 0);
+        const avgNet = nets.length ? Math.round(nets.reduce((a, b) => a + b, 0) / nets.length) : 0;
+
+        const forecast = [];
+        for (let i = 1; i <= months; i++) {
+            const monthKey = dayjs().add(i, 'month').format('YYYY-MM');
+            forecast.push({ month: monthKey, projectedNet: avgNet });
+        }
+        console.log("Forecast data:", { monthlyData, forecast });
+
+        res.status(200).json({ success: true, data: { history: monthlyData, forecast } });
+    } catch (err) {
+        console.error('getForecast error', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
 exports.getFinancialSummary = async (req, res) => {
     try {
         const userId = req.user.id;

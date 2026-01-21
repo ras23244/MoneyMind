@@ -35,13 +35,12 @@ export default function GoalsPanel({ formatCurrency }) {
 
     const [goalFilters, setGoalFilters] = useState({ status: "", priority: "", progress: "", search: "" });
 
-    // Use useMemo for efficient filtering and sorting
+    
     const filteredGoals = useMemo(() => {
         let tempGoals = goals.filter((goal) =>
             showPaused ? goal.status === "paused" : goal.status !== "paused"
         );
 
-        // Apply filters
         tempGoals = tempGoals.filter((goal) => {
             const percent = (goal.currentAmount / goal.targetAmount) * 100;
             const meetsStatus = !goalFilters.status || goal.status === goalFilters.status;
@@ -58,7 +57,7 @@ export default function GoalsPanel({ formatCurrency }) {
             return meetsStatus && meetsPriority && meetsSearch && meetsProgress;
         });
 
-        // Sort by priority
+       
         return tempGoals.sort((a, b) => b.priority - a.priority);
     }, [goals, showPaused, goalFilters]);
 

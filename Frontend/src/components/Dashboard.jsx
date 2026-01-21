@@ -21,20 +21,15 @@ import { useGoals } from "./hooks/useGoals";
 import { useBills, useBillSummary } from './hooks/useBills';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import AddBudgetDialog from "./AddBudgetDialog";
-import { useCreateBudget } from "./hooks/useBudgetMutations";
+
 import BalanceCards from './BalanceCards';
-import AddGoalDialog from "./AddGoalDialog";
-import { useCreateGoal } from "./hooks/useGoals";
+
 import dayjs from "dayjs";
 import NotesPanel from './NotesPanel';
-import CategoryBreakdown from './dashboard/CategoryBreakdown';
-import CategoryModal from './dashboard/CategoryModal';
+
 import AlertsPanel from './dashboard/AlertsPanel';
-import InsightsPanel from './dashboard/InsightsPanel';
 import TransactionList from './dashboard/TransactionList';
 
-import BillsPanel from './dashboard/BillsPanel';
 import {
     useFinancialSummary,
     useCategoryBreakdown,
@@ -52,17 +47,8 @@ export default function Dashboard() {
     const [dateRange] = useState('6M');
     const navigate = useNavigate();
 
-    // expandable section states
-    const [budgetsExpanded, setBudgetsExpanded] = useState(false);
-    const [goalsExpanded, setGoalsExpanded] = useState(false);
-    const [txExpanded, setTxExpanded] = useState(false);
-    const [openBudgetDialog, setOpenBudgetDialog] = useState(false);
-    const createBudgetMutation = useCreateBudget(user?._id);
-    const [openGoalDialog, setOpenGoalDialog] = useState(false);
     const [openAddBillDialog, setOpenAddBillDialog] = useState(false);
-    const createGoalMutation = useCreateGoal(user?._id);
 
-    // --- Fetch real backend data ---
     const { data: transactions = [], isLoading: txLoading } = useTransactions(user?._id);
     const { data: budgets = [], isLoading: budgetsLoading } = useBudgets(user?._id, {});
     const { data: goals = [], isLoading: goalsLoading } = useGoals(user?._id);
@@ -71,7 +57,6 @@ export default function Dashboard() {
     const { data: billsSummary = {}, isLoading: billsSummaryLoading } = useBillSummary(user?._id);
     const { data: financialSummary = {}, isLoading: summaryLoading } = useFinancialSummary(user?._id);
 
-    // Optimized data fetching with backend aggregations
     const { data: categoryBreakdownData = [], isLoading: categoryBreakdownLoading } = useCategoryBreakdown(user?._id);
     const { data: spendingHeatmap = [], isLoading: spendingHeatmapLoading } = useSpendingHeatmap(user?._id);
     const { data: monthlyTrends = [], isLoading: trendsLoading } = useTrendData(user?._id);
@@ -145,20 +130,12 @@ export default function Dashboard() {
             }));
     }, [financialSummary, transactions]);
 
-    const { data: currentAgg = { overall: [], monthwise: [] }, isLoading: currentAggLoading } = useCategoryAggregation(user?._id, { range: '1M' });
-    const { data: modalAgg = { overall: [], monthwise: [] }, isLoading: modalAggLoading } = useCategoryAggregation(user?._id, catRange === 'custom' ? { start: customStart, end: customEnd } : { range: catRange });
-
-    const currentRangeStart = dayjs().startOf('month');
-    const currentRangeEnd = dayjs().endOf('month');
-    const fallbackCurrent = aggregateFromTxs(transactions, currentRangeStart, currentRangeEnd);
-
     let modalRangeStart;
     let modalRangeEnd = dayjs().endOf('day');
     if (catRange === '1M') modalRangeStart = dayjs().startOf('month');
     else if (catRange === '3M') modalRangeStart = dayjs().startOf('month').subtract(2, 'month');
     else if (catRange === '6M') modalRangeStart = dayjs().startOf('month').subtract(5, 'month');
     else modalRangeStart = dayjs(customStart);
-    const fallbackModalOverall = aggregateFromTxs(transactions, modalRangeStart, modalRangeEnd);
 
     console.log("transactions from dashboard", transactions)
 
@@ -187,29 +164,6 @@ export default function Dashboard() {
         return res;
     }, [monthlyExpenses, monthlyIncome, monthlySavings, categoryBreakdown, budgetsUi]);
 
-
-    const handleAddBudget = (newBudget) => {
-        createBudgetMutation.mutate({
-            ...newBudget,
-            month: newBudget.month || dayjs().format("YYYY-MM"),
-        });
-        setOpenBudgetDialog(false);
-    };
-
-    const handleAddGoal = (goalData) => {
-        createGoalMutation.mutate(
-            {
-                ...goalData,
-                createdAt: dayjs().format(),
-            },
-            {
-                onSuccess: () => {
-                    setOpenGoalDialog(false);
-                },
-            }
-        );
-    };
-
     if (loading) return <div className="p-6">Loading dashboard...</div>;
     if (!user) return <div className="p-6">Please log in to view dashboard.</div>;
 
@@ -227,13 +181,10 @@ export default function Dashboard() {
     return (
         <div className="p-4 max-w-[1300px] mx-auto min-h-0">
 
-
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                 <div>
                     <h1 className="text-2xl font-semibold text-slate-100">Overview</h1>
                 </div>
-
-
             </div>
 
 
@@ -249,22 +200,12 @@ export default function Dashboard() {
 
             <section aria-labelledby="insights-heading" className="mb-8">
                 <h2 id="insights-heading" className="text-sm font-medium text-slate-300 mb-3">Insights & Analysis</h2>
-                <div className="grid grid-cols-1 lg:grid-cols-[1.8fr_1.1fr_1.1fr] gap-6 h-[520px] min-h-0">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[520px] min-h-0">
 
-                    <div className="h-full min-h-0 overflow-hidden">
-                        <BillsPanel userId={user?._id} onNavigate={() => navigate('/bills')} />
-                    </div>
+                    <div className="bg-slate-800/40 rounded-lg p-4 border border-white/6 flex flex-col min-h-0">
 
-                    <div className="flex flex-col gap-3 h-full min-h-0">
-                        <div className="bg-slate-800/40 rounded-lg p-4 border border-white/6 flex flex-col min-h-0">
-                          
-                            <div className="flex-1 min-h-0 overflow-y-auto">
-                                <NotesPanel />
-                            </div>
-                        </div>
-
-                        <div className="bg-slate-800/40 rounded-lg p-3 border border-white/6 overflow-auto" style={{ maxHeight: '400px' }}>
-                            <InsightsPanel budgets={budgetsUi} goals={goalsUi} currency={currency} />
+                        <div className="flex-1 min-h-0 overflow-y-auto">
+                            <NotesPanel />
                         </div>
                     </div>
 
@@ -296,42 +237,7 @@ export default function Dashboard() {
                         />
                     </div>
 
-                    <div className="lg:col-span-2">
-                        <div className="bg-slate-800/40 rounded-lg p-4 border border-white/6">
-                            <div className="flex items-center justify-between">
-                                <h3 className="font-semibold">Spending by Category</h3>
-                                <div className="flex items-center gap-2">
-                                    <div className="text-sm text-slate-400">Showing: Current month</div>
-                                    <button onClick={() => setCatModalOpen(true)} className="px-3 py-1 bg-slate-700/40 rounded text-sm text-white">See more</button>
-                                </div>
-                            </div>
-                            <div className="mt-3">
-                                {currentAggLoading ? (
-                                    <div className="text-sm text-slate-400">Loading category breakdown...</div>
-                                ) : (currentAgg.overall && currentAgg.overall.length) ? (
-                                    <CategoryBreakdown categoryBreakdown={currentAgg.overall} monthlyExpenses={currentAgg.overall.reduce((s, c) => s + c.value, 0) || monthlyExpenses} />
-                                ) : (fallbackCurrent && fallbackCurrent.length) ? (
-                                    <CategoryBreakdown categoryBreakdown={fallbackCurrent} monthlyExpenses={fallbackCurrent.reduce((s, c) => s + c.value, 0) || monthlyExpenses} />
-                                ) : (
-                                    <div className="text-sm text-slate-400">No category spending data available for this period.</div>
-                                )}
-                            </div>
-                            <CategoryModal
-                                open={catModalOpen}
-                                setOpen={setCatModalOpen}
-                                catRange={catRange}
-                                setCatRange={setCatRange}
-                                customStart={customStart}
-                                customEnd={customEnd}
-                                setCustomStart={setCustomStart}
-                                setCustomEnd={setCustomEnd}
-                                modalAgg={modalAgg}
-                                modalAggLoading={modalAggLoading}
-                                fallbackOverall={fallbackModalOverall}
-                                monthlyExpenses={monthlyExpenses}
-                            />
-                        </div>
-                    </div>
+               
 
                     <div className="lg:col-span-3">
                         <div className="bg-slate-800/60 rounded-xl p-4 border border-white/10 shadow-md max-w-[850px] mx-auto">
@@ -391,9 +297,7 @@ export default function Dashboard() {
                             </div>
                         </div>
                     </div>
-
-
-                </div>
+               </div>
             </section>
 
             {/* Footer */}
@@ -404,18 +308,6 @@ export default function Dashboard() {
                     <button className="px-3 py-2 bg-transparent border border-white/10 rounded">Download Report (PDF)</button>
                 </div>
             </footer>
-
-            <AddBudgetDialog
-                open={openBudgetDialog}
-                setOpen={setOpenBudgetDialog}
-                onSave={handleAddBudget}
-            />
-
-            <AddGoalDialog
-                open={openGoalDialog}
-                setOpen={setOpenGoalDialog}
-                onSave={handleAddGoal}
-            />
 
             <AddBillDialog
                 open={openAddBillDialog}

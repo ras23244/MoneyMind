@@ -7,7 +7,7 @@ import ConnectedAccounts from "../components/ConnectedAccounts";
 import GoalsPanel from "../components/GoalsPanel";
 import TransactionsPanel from "../components/TransactionsPanel";
 import { Button } from "@/components/ui/button";
-import { Bell, Plus, Home, Receipt, Target, Goal, BarChart3, Wallet } from "lucide-react";
+import { Bell, Plus, Home, Receipt, Target, Goal, BarChart3, Wallet, FileText } from "lucide-react";
 import { useUser } from '../context/UserContext';
 import AddTransactionDialog from "../components/AddTransactionDialog";
 import useGeneral from "../components/hooks/useGeneral";
@@ -25,6 +25,7 @@ import { useFinancialSummary } from "../components/hooks/useFinancialSummary";
 import { transactionTrendData, financialGoals, connectedBanks } from "@/data/financeData";
 import Dashboard from "../components/Dashboard";
 import NotificationBell from "../components/NotificationBell";
+import Bills from "./Bills";
 
 export default function FinanceDashboard() {
     const { user, loading } = useUser();
@@ -106,6 +107,7 @@ export default function FinanceDashboard() {
         { id: "budgets", label: "Budgets", icon: Target },
         { id: "goals", label: "Goals", icon: Goal },
         { id: "analytics", label: "Analytics", icon: BarChart3 },
+        { id: "bills", label: "Bills", icon: FileText },
         { id: "accounts", label: "Accounts", icon: Wallet },
     ];
 
@@ -127,12 +129,13 @@ export default function FinanceDashboard() {
                     </div>
 
                     {/* Overview */}
-                    {activeTab ==="overview" && <Dashboard/>}
+                    {activeTab === "overview" && <Dashboard />}
 
                     {activeTab === "accounts" && <Accounts connectedBanks={connectedBanks} />}
                     {activeTab === "goals" && <GoalsPanel formatCurrency={formatCurrency} financialGoals={financialGoals} />}
                     {activeTab === "budgets" && <Budgets />}
-                    {activeTab === "analytics" && <Analytics transactionTrendData={transactionTrendData} />}
+                    {activeTab === "analytics" && <Analytics formatCurrency={formatCurrency} transactionTrendData={transactionTrendData} />}
+                    {activeTab === "bills" && <Bills />}
                     {activeTab === "transactions" && <TransactionsPanel selectedDate={selectedDate} setSelectedDate={setSelectedDate} transactions={transactions} formatCurrency={formatCurrency} />}
                 </div>
             </main>
