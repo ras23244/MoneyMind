@@ -11,7 +11,7 @@ import { useUser } from '../context/UserContext'
 
 const LinkBankAccount = () => {
     const { navigate } = useGeneral()
-    const [loading, setLoading] = useState(false)  // ✅ loading state
+    const [loading, setLoading] = useState(false)  
     const { user, patchUser,setUser } = useUser()
 
     const initialState = {
@@ -28,9 +28,8 @@ const LinkBankAccount = () => {
 
     const handleSubmit = async (values) => {
         const token = localStorage.getItem("token")
-        setLoading(true)   // start loading
+        setLoading(true)  
         try {
-            console.log("values are received in handler", values)
             const res = await axios.post(
                 `${import.meta.env.VITE_BASE_URL}account/link-bank-account`,
                 values,
@@ -40,19 +39,15 @@ const LinkBankAccount = () => {
             if (res.status === 201) {
                 toast.success("Bank account linked successfully! Redirecting...")
                 patchUser(res.data.user)
-                navigate('/dashboard')// navigate after delay
+                navigate('/dashboard')
             }
         } catch (err) {
             toast.error(err.response?.data?.message || "Failed to link bank account")
         } finally {
-            setLoading(false)  // stop loading
+            setLoading(false)  
         }
     }
-
-
-   
-
-    return (
+   return (
         <div className="login-container">
             <ToastContainer />
             <div className="login-left">
@@ -118,11 +113,10 @@ const LinkBankAccount = () => {
                                     />
                                 </div>
 
-                                {/* Submit button */}
                                 <button
                                     type="submit"
                                     className="signup-btn"
-                                    disabled={loading}   // disable while loading
+                                    disabled={loading}  
                                 >
                                     {loading ? "Please wait, reviewing your credentials..." : "Link Account"}
                                 </button>

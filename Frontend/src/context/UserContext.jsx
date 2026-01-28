@@ -26,7 +26,6 @@ export const UserProvider = ({ children }) => {
                     return;
                 }
 
-                // ✅ If user already in localStorage, skip API fetch
                 if (user) {
                     setLoading(false);
                     return;
@@ -54,7 +53,7 @@ export const UserProvider = ({ children }) => {
         fetchUser();
     }, []);
 
-    // initialize socket when user/token is available
+   
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (!token || !user) return;
@@ -67,7 +66,7 @@ export const UserProvider = ({ children }) => {
         });
 
         s.on('notification', (n) => {
-            // normalize incoming notification (server may send `id`)
+           
             const normalized = {
                 id: n.id || n._id || String(n._id),
                 type: n.type,
@@ -89,7 +88,6 @@ export const UserProvider = ({ children }) => {
         };
     }, [user]);
 
-    // fetch unread notifications on user login
     useEffect(() => {
         const fetchNotifications = async () => {
             try {
@@ -171,6 +169,8 @@ export const UserProvider = ({ children }) => {
     const patchUser = (partialData) => {
         let updatedUser;
         setUser((prevUser) => {
+            console.log("Patching user with data:", partialData);
+            console.log("Previous user data:", prevUser);
             updatedUser = { ...prevUser, ...partialData };
             localStorage.setItem("user", JSON.stringify(updatedUser));
             return updatedUser;

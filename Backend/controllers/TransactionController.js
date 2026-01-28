@@ -691,7 +691,7 @@ exports.bulkCreateTransactions = async (req, res) => {
             const date = t.date ? new Date(t.date) : new Date();
             return {
                 userId: req.user.id,
-                accountId: t.bankAccountId || t.accountId || t.accountId || null,
+                accountId: t.bankAccountId || t.accountId || null,
                 description: t.description || '',
                 note: t.note || '',
                 amount: Number(t.amount) || 0,

@@ -4,11 +4,11 @@ import CSVImporter from "@/components/import/CSVImporter";
 
 export default function ImportCSVDialog({ open, setOpen }) {
     const handleComplete = (result) => {
-        // close dialog on success or cancel
+       
         if (result && (result.inserted || result.cancelled)) {
             setOpen(false);
         } else if (result && result.attempted) {
-            // also close normally after import summary
+          
             setOpen(false);
         }
     };

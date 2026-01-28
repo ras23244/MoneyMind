@@ -19,6 +19,7 @@ const goalRoutes = require('./routes/GoalRoutes');
 const noteRoutes = require('./routes/NoteRoutes');
 const billRoutes = require('./routes/BillRoutes');
 const notificationRoutes = require('./routes/NotificationRoutes');
+const expressMongoSanitize = require('@exortek/express-mongo-sanitize'); 
 
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
@@ -36,8 +37,8 @@ app.use(session({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(expressMongoSanitize())
 
-//google login config
 app.use(passport.initialize());
 app.use(passport.session());
 passport.use(new googleStrategy({
