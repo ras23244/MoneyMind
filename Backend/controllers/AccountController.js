@@ -11,13 +11,19 @@ exports.linkBankAccount = async (req, res) => {
     }
 
     try {
-        // Find the user by email
         const user = await UserModel.findOne({ email });
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
+        const existingAccount = await AccountModel.findOne({
+            userId: user._id,
+            bankName,
+            accountNumber,
+        });
 
-        // Create a new account
+        if (existingAccount) {
+            return res.status(400).json({ message: 'This bank account is already linked' });
+        }
         const newAccount = new AccountModel({
             userId: user._id,
             bankName,
@@ -26,12 +32,13 @@ exports.linkBankAccount = async (req, res) => {
 
         await newAccount.save();
 
-        // Update user and return updated document with populated bankAccounts
         const updatedUser = await UserModel.findByIdAndUpdate(
             user._id,
-            { $push: { bankAccounts: newAccount._id } },
+            { $addToSet: { bankAccounts: newAccount._id } },
             { new: true }
-        ).populate('bankAccounts'); // populate bank accounts if it's a ref
+        ).populate('bankAccounts');
+
+        console.log('Updated User after linking account:', updatedUser);
 
         res.status(201).json({
             message: 'Bank account linked successfully',
@@ -57,7 +64,7 @@ exports.unlinkAccount = async (req, res) => {
         return res.status(400).json({ message: "All fields are required" });
     }
     try {
-        const user = UserModel.findOne({ email }).populate('bankAccounts');
+        const user = await UserModel.findOne({ email }).populate('bankAccounts');
         if (!user) {
             return res.status(400).json({ message: "Wrong email" });
         }
@@ -71,22 +78,24 @@ exports.unlinkAccount = async (req, res) => {
 
         if (!accountToRemove) {
             return res.status(404).json({ message: "Account not found" });
-            await notify({
-                userId: user._id.toString(),
-                type: 'account_unlinked',
-                title: 'Account unlinked',
-                body: `${accountToRemove.bankName} account unlinked`,
-                data: { accountId: accountToRemove._id.toString() },
-                priority: 'low'
-            });
         }
 
-        user.bankAccounts = user.bankAccounts.filter(
-            acc => acc._id.toString() !== accountToRemove._id.toString()
-        )
-
-        await user.save();
+        // Remove from bankAccounts using $pull for consistency
+        await UserModel.findByIdAndUpdate(
+            user._id,
+            { $pull: { bankAccounts: accountToRemove._id } },
+            { new: true }
+        );
         await AccountModel.findByIdAndDelete(accountToRemove._id);
+
+        await notify({
+            userId: user._id.toString(),
+            type: 'account_unlinked',
+            title: 'Account unlinked',
+            body: `${accountToRemove.bankName} account unlinked`,
+            data: { accountId: accountToRemove._id.toString() },
+            priority: 'low'
+        });
 
         res.status(200).json({ message: "Account unlinked successfully" });
 
@@ -144,19 +153,25 @@ exports.deleteAccount = async (req, res) => {
         const { id } = req.params;
         const userId = req.user._id;
 
+        // First remove from user's bankAccounts array
+        const updatedUser = await UserModel.findByIdAndUpdate(
+            userId,
+            { $pull: { bankAccounts: id } },
+            { new: true }
+        );
+
+        // Then delete the account document
         const account = await AccountModel.findByIdAndDelete(id);
 
         if (!account) {
             return res.status(404).json({ message: 'Account not found' });
         }
 
-        // Remove from user's accounts
-        await UserModel.findByIdAndUpdate(userId, {
-            $pull: { bankAccounts: id }
-        });
+        console.log(`Account ${id} deleted and removed from user ${userId}`);
 
         res.status(200).json({
             message: 'Account deleted successfully',
+            user: updatedUser
         });
     } catch (error) {
         console.error('Error deleting account:', error);

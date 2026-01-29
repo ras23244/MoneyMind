@@ -10,7 +10,7 @@ import useGeneral from './hooks/useGeneral';
 import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { useUser } from '../context/UserContext'; 
+import { useUser } from '../context/UserContext';
 
 function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -32,21 +32,22 @@ function Login() {
       const res = await axios.post(`${import.meta.env.VITE_BASE_URL}users/login`, {
         email: values.email,
         password: values.password
-      }
-      )
+      });
 
-      if (res.status == 200) {
+      if (res.status === 200) {
         toast.success('Login successful!');
         localStorage.setItem('token', res.data.token);
- 
-        // In your Login.jsx after successful login:
         login(res.data.user, res.data.token);
-        navigate("/link-bank-account");
+        // Redirect based on bankAccounts
+        if (Array.isArray(res.data.user.bankAccounts) && res.data.user.bankAccounts.length > 0) {
+          navigate("/dashboard");
+        } else {
+          navigate("/link-bank-account");
+        }
       }
-    }
-    catch (err) {
-      console.error("Registration error:", err);
-      toast.error('Registration failed!');
+    } catch (err) {
+      console.error("Login error:", err);
+      toast.error('Login failed!');
     }
   };
 
@@ -56,7 +57,7 @@ function Login() {
 
   return (
     <div className="login-container">
-       <ToastContainer />
+      <ToastContainer />
       <div className="login-left">
         <div className="login-form-wrapper">
           <div className="logo-container">

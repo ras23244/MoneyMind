@@ -31,6 +31,13 @@ export default function FinanceDashboard() {
     const { user, loading } = useUser();
     const { navigate } = useGeneral();
 
+    // Redirect to link-bank-account if user has no accounts
+    React.useEffect(() => {
+        if (!loading && user && (!Array.isArray(user.bankAccounts) || user.bankAccounts.length === 0)) {
+            navigate('/link-bank-account');
+        }
+    }, [user, loading, navigate]);
+
     // Fetch data using hooks
     const { data: budgets = [] } = useBudgets(user?._id);
     const { data: transactions = [], refetch: refetchTransactions } = useTransactions(user?._id);
@@ -98,6 +105,10 @@ export default function FinanceDashboard() {
 
     if (!user) {
         return <div>Please log in to continue.</div>;
+    }
+    // Restrict dashboard if no accounts
+    if (Array.isArray(user.bankAccounts) && user.bankAccounts.length === 0) {
+        return null; // Or a loading spinner, since useEffect will redirect
     }
 
     // --- Navigation and rendering the main content ---

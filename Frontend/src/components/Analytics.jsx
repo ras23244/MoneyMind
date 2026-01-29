@@ -71,10 +71,10 @@ export default function Analytics() {
         <CategoryBreakdown categoryBreakdown={categoryBreakdown} monthlyExpenses={financialSummary.monthlyExpenses || 0} />
     );
     return (
-        <div className="min-h-screen bg-background text-white p-6 md:p-10">
+        <div className="min-h-screen bg-background text-white ">
             {/* Header and Period Selector */}
-            <div className="flex items-center justify-between mb-8">
-                <h1 className="text-3xl font-bold">Analytics</h1>
+            <div className="flex items-center justify-between mb-2">
+                <h1 className="text-2xl font-bold">Analytics</h1>
                 <div className="flex items-center space-x-2 bg-[#1f1d1f] p-1 rounded-full border border-white/10">
                     <Button
                         onClick={() => setCurrentPeriodIndex(Math.min(currentPeriodIndex + 1, periods.length - 1))}

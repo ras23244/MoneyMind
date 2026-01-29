@@ -1,16 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import axios from "axios";
 import { io } from 'socket.io-client';
-
-
 export const UserContext = createContext();
-
-
 export const UserProvider = ({ children }) => {
     const [user, setUser] = useState(() => {
         const storedUser = localStorage.getItem("user");
         return storedUser ? JSON.parse(storedUser) : null;
     });
+
+    const [token, setToken] = useState(() => localStorage.getItem("token"));
 
     const [loading, setLoading] = useState(true);
     const [socket, setSocket] = useState(null);
@@ -19,14 +17,8 @@ export const UserProvider = ({ children }) => {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const token = localStorage.getItem("token");
                 if (!token) {
                     setUser(null);
-                    setLoading(false);
-                    return;
-                }
-
-                if (user) {
                     setLoading(false);
                     return;
                 }
@@ -39,10 +31,11 @@ export const UserProvider = ({ children }) => {
                         },
                     }
                 );
-
+                console.log('Fetched user data from server:', res.data);
                 setUser(res.data);
                 localStorage.setItem("user", JSON.stringify(res.data));
-            } catch {
+            } catch (err) {
+                console.error('Failed to fetch user:', err);
                 setUser(null);
                 localStorage.removeItem("user");
             } finally {
@@ -51,9 +44,9 @@ export const UserProvider = ({ children }) => {
         };
 
         fetchUser();
-    }, []);
+    }, [token]);
 
-   
+
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (!token || !user) return;
@@ -66,7 +59,7 @@ export const UserProvider = ({ children }) => {
         });
 
         s.on('notification', (n) => {
-           
+
             const normalized = {
                 id: n.id || n._id || String(n._id),
                 type: n.type,
@@ -159,11 +152,12 @@ export const UserProvider = ({ children }) => {
     };
 
     const login = (userData, token) => {
-        setUser(userData);
+        // Store token first to trigger fetchUser effect
         if (token) {
             localStorage.setItem("token", token);
+            setToken(token);
+            // Don't set user yet—let fetchUser effect validate from server
         }
-        localStorage.setItem("user", JSON.stringify(userData));
     };
 
     const patchUser = (partialData) => {
@@ -182,6 +176,7 @@ export const UserProvider = ({ children }) => {
         setUser(null);
         localStorage.removeItem("user");
         localStorage.removeItem("token");
+        setToken(null);
         try { socket && socket.disconnect(); } catch (e) { }
         setNotifications([]);
     };

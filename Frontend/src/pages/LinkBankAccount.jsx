@@ -1,4 +1,4 @@
-import React, { useState,useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Form, Formik } from 'formik'
 import * as Yup from 'yup'
 import TextField from '@mui/material/TextField'
@@ -11,8 +11,14 @@ import { useUser } from '../context/UserContext'
 
 const LinkBankAccount = () => {
     const { navigate } = useGeneral()
-    const [loading, setLoading] = useState(false)  
-    const { user, patchUser,setUser } = useUser()
+    const [loading, setLoading] = useState(false)
+    const { user, patchUser, setUser } = useUser()
+
+    useEffect(() => {
+        if (user && Array.isArray(user.bankAccounts) && user.bankAccounts.length > 0) {
+            navigate('/dashboard');
+        }
+    }, [user, navigate]);
 
     const initialState = {
         email: '',
@@ -28,26 +34,30 @@ const LinkBankAccount = () => {
 
     const handleSubmit = async (values) => {
         const token = localStorage.getItem("token")
-        setLoading(true)  
+        setLoading(true)
         try {
             const res = await axios.post(
                 `${import.meta.env.VITE_BASE_URL}account/link-bank-account`,
                 values,
                 { headers: { Authorization: `Bearer ${token}` } }
             )
-
             if (res.status === 201) {
                 toast.success("Bank account linked successfully! Redirecting...")
-                patchUser(res.data.user)
+                // Refetch user from server to ensure fresh bankAccounts
+                const meRes = await axios.get(
+                    `${import.meta.env.VITE_BASE_URL}users/me`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                patchUser(meRes.data)
                 navigate('/dashboard')
             }
         } catch (err) {
             toast.error(err.response?.data?.message || "Failed to link bank account")
         } finally {
-            setLoading(false)  
+            setLoading(false)
         }
     }
-   return (
+    return (
         <div className="login-container">
             <ToastContainer />
             <div className="login-left">
@@ -116,7 +126,7 @@ const LinkBankAccount = () => {
                                 <button
                                     type="submit"
                                     className="signup-btn"
-                                    disabled={loading}  
+                                    disabled={loading}
                                 >
                                     {loading ? "Please wait, reviewing your credentials..." : "Link Account"}
                                 </button>

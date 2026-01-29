@@ -13,7 +13,7 @@ import AccountCard from "./cards/AccountCard";
 import AccountStats from "./cards/AccountStats";
 
 const Accounts = () => {
-    const { user } = useUser();
+    const { user, patchUser } = useUser();
     const { data: accounts = [], isLoading } = useAccounts(user?._id);
     const { data: stats = {}, isLoading: statsLoading } = useAccountStats(user?._id);
 
@@ -38,14 +38,16 @@ const Accounts = () => {
         setOpenUpdateDialog(true);
     };
 
+    // Prevent removing last account (UI enforcement)
+    const canRemoveAccount = accounts.length > 1;
+
     const handleViewTransactions = (account) => {
         setSelectedAccount(account);
         setOpenTransactionsModal(true);
     };
 
     return (
-        <div className="p-6 space-y-6 min-h-screen bg-gradient-to-b from-slate-950 to-slate-900">
-            {/* Header */}
+        <div className="space-y-6 min-h-screen">
             <div className="flex justify-between items-center">
                 <div>
                     <h2 className="text-2xl font-bold text-white">Accounts</h2>
@@ -133,6 +135,7 @@ const Accounts = () => {
                                     userId={user?._id}
                                     onEdit={handleEditAccount}
                                     onViewTransactions={handleViewTransactions}
+                                    canRemove={canRemoveAccount}
                                 />
                             ))}
                         </div>

@@ -3,6 +3,7 @@ const User = require('../models/UserModel');
 const generateToken = require('../utils/generateToken');
 const sendMail = require('../utils/sendMail');
 const bcrypt = require('bcrypt');
+const Account = require('../models/AccountModel');
 
 // @route   POST /users/register
 exports.register = async (req, res) => {
@@ -37,22 +38,36 @@ exports.login = async (req, res) => {
         const { email, password } = req.body;
 
         const user = await User.findOne({ email });
-        if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+
+        if (!user) {
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+        console.log('User found during login:', user);
 
         const isMatch = await user.comparePassword(password);
-        if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
+        if (!isMatch) {
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
 
         const token = generateToken(user);
 
+        // Return minimal user payload on login; bankAccounts will be populated by GET /users/me
         res.status(200).json({
             message: 'Login successful',
-            token: token,
-            user: { _id: user._id, fullname: user.fullname, email: user.email },
+            token,
+            user: {
+                _id: user._id,
+                fullname: user.fullname,
+                email: user.email,
+                bankAccounts: user.bankAccounts || []
+            }
         });
+
     } catch (err) {
         res.status(500).json({ message: 'Server error', error: err.message });
     }
 };
+
 
 // @route   POST /users/logout
 exports.logout = (req, res) => {
@@ -61,7 +76,27 @@ exports.logout = (req, res) => {
 
 // @route   GET /users/me
 exports.getMe = async (req, res) => {
-    const user = await User.findById(req.user.id).select('-password');
+    // Fetch user (without password)
+    let user = await User.findById(req.user.id).select('-password');
+
+    // Validate and deduplicate bankAccounts: keep only accounts that actually exist
+    if (user.bankAccounts && user.bankAccounts.length > 0) {
+        const rawBankAccounts = user.bankAccounts.map(b => (b && b._id) ? b._id.toString() : b.toString());
+        const existingAccounts = await Account.find({ _id: { $in: rawBankAccounts }, userId: user._id }).select('_id');
+        const existingIds = existingAccounts.map(a => a._id.toString());
+        const uniqueAccountIds = [...new Set(existingIds)];
+
+        // If there were differences, persist cleaned list
+        if (uniqueAccountIds.length !== rawBankAccounts.length) {
+            await User.findByIdAndUpdate(user._id, { bankAccounts: uniqueAccountIds }).exec();
+            // re-fetch user so we can populate fresh bankAccounts
+            user = await User.findById(req.user.id).select('-password').populate({ path: 'bankAccounts', select: 'accountNumber bankName balance' });
+            return res.status(200).json(user);
+        }
+    }
+
+    // Populate bankAccounts for response
+    await user.populate({ path: 'bankAccounts', select: 'accountNumber bankName balance' });
     res.status(200).json(user);
 };
 

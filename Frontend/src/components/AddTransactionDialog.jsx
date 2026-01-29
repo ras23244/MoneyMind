@@ -15,8 +15,9 @@ export default function AddTransactionDialog({ open, setOpen, userId, transactio
     const { user } = useUser();
     const addTransactionMutation = useAddTransaction(userId);
     const editTransactionMutation = useEditTransaction(userId);
+    console.log('user from dialog', user);
 
-    // If editing, initialize form with transaction data
+    
     const [form, setForm] = useState({
         userId: userId,
         description: "",
@@ -67,7 +68,7 @@ export default function AddTransactionDialog({ open, setOpen, userId, transactio
         setLoading(true);
 
         if (transaction && transaction._id) {
-            // Edit mode
+           
             editTransactionMutation.mutate(
                 form,
                 {
@@ -88,7 +89,6 @@ export default function AddTransactionDialog({ open, setOpen, userId, transactio
                 }
             );
         } else {
-            // Add mode
             addTransactionMutation.mutate(
                 form,
                 {
@@ -122,7 +122,6 @@ export default function AddTransactionDialog({ open, setOpen, userId, transactio
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Description */}
                     <div>
                         <Label htmlFor="description" className="text-white mb-1">Description</Label>
                         <Input
