@@ -15,9 +15,7 @@ export default function AddTransactionDialog({ open, setOpen, userId, transactio
     const { user } = useUser();
     const addTransactionMutation = useAddTransaction(userId);
     const editTransactionMutation = useEditTransaction(userId);
-    console.log('user from dialog', user);
 
-    
     const [form, setForm] = useState({
         userId: userId,
         description: "",

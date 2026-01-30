@@ -5,7 +5,6 @@ const sendMail = require('../utils/sendMail');
 const bcrypt = require('bcrypt');
 const Account = require('../models/AccountModel');
 
-// @route   POST /users/register
 exports.register = async (req, res) => {
     try {
         const { fullname, email, password } = req.body;
@@ -32,7 +31,6 @@ exports.register = async (req, res) => {
     }
 };
 
-// @route   POST /users/login
 exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -51,7 +49,6 @@ exports.login = async (req, res) => {
 
         const token = generateToken(user);
 
-        // Return minimal user payload on login; bankAccounts will be populated by GET /users/me
         res.status(200).json({
             message: 'Login successful',
             token,
@@ -69,33 +66,28 @@ exports.login = async (req, res) => {
 };
 
 
-// @route   POST /users/logout
 exports.logout = (req, res) => {
     res.status(200).json({ message: 'Logged out successfully' });
 };
 
-// @route   GET /users/me
 exports.getMe = async (req, res) => {
-    // Fetch user (without password)
+
     let user = await User.findById(req.user.id).select('-password');
 
-    // Validate and deduplicate bankAccounts: keep only accounts that actually exist
     if (user.bankAccounts && user.bankAccounts.length > 0) {
         const rawBankAccounts = user.bankAccounts.map(b => (b && b._id) ? b._id.toString() : b.toString());
         const existingAccounts = await Account.find({ _id: { $in: rawBankAccounts }, userId: user._id }).select('_id');
         const existingIds = existingAccounts.map(a => a._id.toString());
         const uniqueAccountIds = [...new Set(existingIds)];
 
-        // If there were differences, persist cleaned list
         if (uniqueAccountIds.length !== rawBankAccounts.length) {
             await User.findByIdAndUpdate(user._id, { bankAccounts: uniqueAccountIds }).exec();
-            // re-fetch user so we can populate fresh bankAccounts
+            
             user = await User.findById(req.user.id).select('-password').populate({ path: 'bankAccounts', select: 'accountNumber bankName balance' });
             return res.status(200).json(user);
         }
     }
 
-    // Populate bankAccounts for response
     await user.populate({ path: 'bankAccounts', select: 'accountNumber bankName balance' });
     res.status(200).json(user);
 };
@@ -128,7 +120,6 @@ exports.forgetPassword = async (req, res) => {
         user.password_otp.send_time = new Date().getTime() + 5 * 60 * 1000;
         await user.save();
 
-        // Send OTP to user's email
         const result = await sendMail({
             email: user.email,
             otp: otp

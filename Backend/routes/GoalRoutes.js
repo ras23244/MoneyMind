@@ -4,6 +4,7 @@ const protect = require('../middlewares/authMiddleware');
 const GoalController = require('../controllers/GoalController');
 const { body } = require('express-validator');
 
+
 router.get('/get-goals', protect, GoalController.getGoals);
 
 router.post('/create-goal', protect, [
