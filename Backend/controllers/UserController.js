@@ -65,7 +65,6 @@ exports.login = async (req, res) => {
     }
 };
 
-
 exports.logout = (req, res) => {
     res.status(200).json({ message: 'Logged out successfully' });
 };
@@ -82,7 +81,7 @@ exports.getMe = async (req, res) => {
 
         if (uniqueAccountIds.length !== rawBankAccounts.length) {
             await User.findByIdAndUpdate(user._id, { bankAccounts: uniqueAccountIds }).exec();
-            
+
             user = await User.findById(req.user.id).select('-password').populate({ path: 'bankAccounts', select: 'accountNumber bankName balance' });
             return res.status(200).json(user);
         }
@@ -168,7 +167,6 @@ exports.getTime = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 }
-
 
 exports.updatePassword = async (req, res) => {
     try {

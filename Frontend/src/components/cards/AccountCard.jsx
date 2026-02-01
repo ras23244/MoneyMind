@@ -68,14 +68,7 @@ export default function AccountCard({ account, userId, onEdit, onViewTransaction
                             ****{account.accountNumber.slice(-4)}
                         </span>
                     </div>
-                    {account.notes && (
-                        <div className="flex justify-between">
-                            <span className="text-slate-400">Notes:</span>
-                            <span className="text-slate-300 text-xs max-w-[150px] text-right">
-                                {account.notes}
-                            </span>
-                        </div>
-                    )}
+                    
                     <div className="flex justify-between">
                         <span className="text-slate-400">Created:</span>
                         <span className="text-slate-300 text-xs">
@@ -84,7 +77,6 @@ export default function AccountCard({ account, userId, onEdit, onViewTransaction
                     </div>
                 </div>
 
-                {/* Quick Actions */}
                 <div className="flex gap-2 pt-2">
                     <Button
                         size="sm"

@@ -47,7 +47,9 @@ function Login() {
       }
     } catch (err) {
       console.error("Login error:", err);
-      toast.error('Login failed!');
+      console.error("Server response:", err.response?.data);
+      const errorMessage = err.response?.data?.message || 'Login failed!';
+      toast.error(errorMessage);
     }
   };
 

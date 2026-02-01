@@ -11,7 +11,6 @@ router.get('/get-transactions', protect, TransactionController.getTransactions);
 router.get('/get-transaction/:id', protect, TransactionController.getTransactionById);
 router.put('/update-transaction/:id', protect, TransactionController.updateTransaction);
 router.delete('/delete-transaction/:id', protect, TransactionController.deleteTransaction);
-router.get('/filter-transactions', protect, TransactionController.filterTransactions);
 router.get('/export', protect, exportLimiter, TransactionController.exportTransactions);
 router.get("/trends", protect, TransactionController.getTransactionTrends);
 router.get("/forecast", protect, TransactionController.getForecast);

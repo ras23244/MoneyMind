@@ -19,7 +19,6 @@ export default function InsightsPanel({ budgets = [], goals = [], currency = (n)
 
     return (
         <div className="bg-slate-800/40 rounded-lg p-3 border border-white/6">
-            <h4 className="font-semibold mb-2">Top Budgets & Goals</h4>
             <div className="grid grid-cols-1 gap-3">                                                                                                           
                 <div>
                     <div className="text-sm text-slate-300 mb-2">Top Budgets</div>

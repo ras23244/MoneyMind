@@ -64,6 +64,7 @@ export default function AccountTransactionsModal({ open, setOpen, account }) {
             category: transaction.category,
             note: transaction.note,
             type: transaction.type,
+            date: transaction.date,
         });
     };
 
@@ -164,7 +165,7 @@ export default function AccountTransactionsModal({ open, setOpen, account }) {
                         </div>
                     </div>
 
-                    {/* Transactions List */}
+                   
                     {isLoading ? (
                         <div className="text-center py-8 text-slate-400">Loading transactions...</div>
                     ) : filteredTransactions.length === 0 ? (
@@ -194,11 +195,28 @@ export default function AccountTransactionsModal({ open, setOpen, account }) {
                                                     placeholder="Amount"
                                                 />
                                                 <Input
+                                                    type="date"
+                                                    value={editForm.date ? dayjs(editForm.date).format('YYYY-MM-DD') : ''}
+                                                    onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
+                                                    className="bg-slate-700 border-slate-600 text-white"
+                                                    placeholder="Date"
+                                                />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <Input
                                                     value={editForm.category}
                                                     onChange={(e) => setEditForm(prev => ({ ...prev, category: e.target.value }))}
                                                     className="bg-slate-700 border-slate-600 text-white"
                                                     placeholder="Category"
                                                 />
+                                                <select
+                                                    value={editForm.type}
+                                                    onChange={(e) => setEditForm(prev => ({ ...prev, type: e.target.value }))}
+                                                    className="px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm focus:outline-none focus:border-blue-500"
+                                                >
+                                                    <option value="income">Income</option>
+                                                    <option value="expense">Expense</option>
+                                                </select>
                                             </div>
                                             <Input
                                                 value={editForm.note}
@@ -229,7 +247,7 @@ export default function AccountTransactionsModal({ open, setOpen, account }) {
                                             </div>
                                         </div>
                                     ) : (
-                                        // View Mode
+                                    
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3 flex-1">
                                                 <div className={`p-2 rounded-lg ${transaction.type === 'income'
@@ -284,7 +302,7 @@ export default function AccountTransactionsModal({ open, setOpen, account }) {
                                         </div>
                                     )}
 
-                                    {/* Delete Confirmation */}
+                                    
                                     {deleteConfirm === transaction._id && (
                                         <div className="mt-3 p-3 bg-red-900/20 border border-red-600/30 rounded text-sm text-red-200 space-y-2">
                                             <p>Delete this transaction?</p>

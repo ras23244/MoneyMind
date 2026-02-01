@@ -119,14 +119,13 @@ exports.getAccounts = async (req, res) => {
 exports.updateAccount = async (req, res) => {
     try {
         const { id } = req.params;
-        const { accountName, balance, notes, accountType } = req.body;
+        const { accountName, balance, accountType } = req.body;
 
         const account = await AccountModel.findByIdAndUpdate(
             id,
             {
                 accountName,
                 balance,
-                notes,
                 accountType,
                 lastUpdated: Date.now(),
                 updatedAt: Date.now(),

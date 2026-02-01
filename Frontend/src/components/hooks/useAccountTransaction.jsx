@@ -40,11 +40,9 @@ export const useCreateAccountTransaction = (accountId, userId) => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["accountTransactions", accountId] });
             if (userId) {
-                queryClient.invalidateQueries(["financialSummary", userId]);
+                queryClient.invalidateQueries({ queryKey: ["financialSummary", userId] });
                 queryClient.invalidateQueries({ queryKey: ["transactions", userId] });
                 queryClient.invalidateQueries({ queryKey: ["transactionTrends", userId] });
-
-                // ✅ Invalidate Budgets on Transaction Edit
                 queryClient.invalidateQueries({ queryKey: ["budgets", userId] });
             }
         },
@@ -67,7 +65,7 @@ export const useUpdateAccountTransaction = (accountId, userId) => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["accountTransactions", accountId] });
             if (userId) {
-                queryClient.invalidateQueries(["financialSummary", userId]);
+                queryClient.invalidateQueries({ queryKey: ["financialSummary", userId] });
                 queryClient.invalidateQueries({ queryKey: ["transactions", userId] });
                 queryClient.invalidateQueries({ queryKey: ["transactionTrends", userId] });
 
@@ -93,7 +91,7 @@ export const useDeleteAccountTransaction = (accountId, userId) => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["accountTransactions", accountId] });
             if (userId) {
-                queryClient.invalidateQueries(["financialSummary", userId]);
+                queryClient.invalidateQueries({ queryKey: ["financialSummary", userId] });
                 queryClient.invalidateQueries({ queryKey: ["transactions", userId] });
                 queryClient.invalidateQueries({ queryKey: ["transactionTrends", userId] });
                 queryClient.invalidateQueries({ queryKey: ["budgets", userId] });

@@ -11,7 +11,7 @@ export default function AddAccountDialog({ open, setOpen, userId }) {
         bankName: '',
         accountType: 'checking',
         balance: 0,
-        notes: ''
+    
     });
 
     const handleChange = (e) => {
@@ -33,7 +33,7 @@ export default function AddAccountDialog({ open, setOpen, userId }) {
                     bankName: '',
                     accountType: 'checking',
                     balance: 0,
-                    notes: ''
+                    
                 });
             }
         });
@@ -111,18 +111,6 @@ export default function AddAccountDialog({ open, setOpen, userId }) {
                             step="0.01"
                             className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg focus:outline-none focus:border-blue-500"
                             placeholder="₹0"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Notes</label>
-                        <textarea
-                            name="notes"
-                            value={formData.notes}
-                            onChange={handleChange}
-                            rows="3"
-                            className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg focus:outline-none focus:border-blue-500"
-                            placeholder="Add any notes about this account"
                         />
                     </div>
 

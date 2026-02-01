@@ -65,20 +65,37 @@ export default function AddTransactionDialog({ open, setOpen, userId, transactio
         e.preventDefault();
         setLoading(true);
 
+        // Convert date to YYYY-MM-DD string format for backend
+        const { userId, ...formWithoutUserId } = form; // Remove userId from form
+        let tagsProcessed = [];
+        if (Array.isArray(formWithoutUserId.tags)) {
+            tagsProcessed = formWithoutUserId.tags;
+        } else if (typeof formWithoutUserId.tags === 'string') {
+            tagsProcessed = formWithoutUserId.tags ? formWithoutUserId.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [];
+        }
+
+        const formToSubmit = {
+            ...formWithoutUserId,
+            tags: tagsProcessed,
+            date: form.date instanceof Date && !isNaN(form.date)
+                ? form.date.toISOString().split('T')[0]
+                : form.date
+        };
+
         if (transaction && transaction._id) {
-           
+
             editTransactionMutation.mutate(
-                form,
+                formToSubmit,
                 {
                     onSuccess: (data) => {
-                        toast.success("Transaction updated successfully!",{
+                        toast.success("Transaction updated successfully!", {
                             autoClose: 3000
                         });
                         if (onTransactionCreated) onTransactionCreated(data);
                         setOpen(false);
                     },
                     onError: (error) => {
-                        toast.error("Failed to update transaction. Please try again.",{
+                        toast.error("Failed to update transaction. Please try again.", {
                             autoClose: 5000
                         });
                         console.error("Error updating transaction:", error.response?.data || error.message);
@@ -88,17 +105,17 @@ export default function AddTransactionDialog({ open, setOpen, userId, transactio
             );
         } else {
             addTransactionMutation.mutate(
-                form,
+                formToSubmit,
                 {
                     onSuccess: (data) => {
-                        toast.success("Transaction added successfully!",{
+                        toast.success("Transaction added successfully!", {
                             autoClose: 3000
                         });
                         if (onTransactionCreated) onTransactionCreated(data);
                         setOpen(false);
                     },
                     onError: (error) => {
-                        toast.error("Failed to add transaction. Please try again.",{
+                        toast.error("Failed to add transaction. Please try again.", {
                             autoClose: 5000
                         });
                         console.error("Error creating transaction:", error.response?.data || error.message);

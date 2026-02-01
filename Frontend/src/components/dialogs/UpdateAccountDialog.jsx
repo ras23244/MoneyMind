@@ -8,7 +8,7 @@ export default function UpdateAccountDialog({ open, setOpen, account, userId }) 
     const [formData, setFormData] = useState({
         accountName: '',
         balance: 0,
-        notes: '',
+     
         accountType: 'checking'
     });
 
@@ -17,7 +17,7 @@ export default function UpdateAccountDialog({ open, setOpen, account, userId }) 
             setFormData({
                 accountName: account.accountName || '',
                 balance: account.balance || 0,
-                notes: account.notes || '',
+             
                 accountType: account.accountType || 'checking'
             });
         }
@@ -83,17 +83,6 @@ export default function UpdateAccountDialog({ open, setOpen, account, userId }) 
                             value={formData.balance}
                             onChange={handleChange}
                             step="0.01"
-                            className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg focus:outline-none focus:border-blue-500"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Notes</label>
-                        <textarea
-                            name="notes"
-                            value={formData.notes}
-                            onChange={handleChange}
-                            rows="3"
                             className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg focus:outline-none focus:border-blue-500"
                         />
                     </div>

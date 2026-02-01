@@ -6,20 +6,19 @@ export const useEditTransaction = (userId) => {
     const token = localStorage.getItem("token");
 
     return useMutation({
-        mutationFn: async ({ _id, ...data }) => {
+        mutationFn: async ({ _id, bankAccountId, ...data }) => {
             const res = await axios.put(
                 `${import.meta.env.VITE_BASE_URL}transactions/update-transaction/${_id}`,
-                data,
+                { ...data, bankAccountId },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             return res.data;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(["financialSummary", userId]);
+            queryClient.invalidateQueries({ queryKey: ["financialSummary", userId] });
             queryClient.invalidateQueries({ queryKey: ["transactions", userId] });
             queryClient.invalidateQueries({ queryKey: ["transactionTrends", userId] });
-
-            // ✅ Invalidate Budgets on Transaction Edit
+            queryClient.invalidateQueries({ queryKey: ["accountTransactions"] });
             queryClient.invalidateQueries({ queryKey: ["budgets", userId] });
         },
     });

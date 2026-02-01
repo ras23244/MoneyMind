@@ -31,30 +31,15 @@ const accountSchema = new mongoose.Schema({
         type: Number,
         default: 0,
     },
-    notes: {
-        type: String,
-        default: '',
-    },
-    linkedbyAA: {
-        type: Boolean,
-        default: false
-    },
     lastUpdated: {
         type: Date,
         default: Date.now,
     },
-    // consentId:{
-    //     type:String,
-    //     required:true
-    // },
     createdAt: {
         type: Date,
         default: Date.now,
     },
-    updatedAt: {
-        type: Date,
-        default: Date.now,
-    },
+    
 });
 
 module.exports = mongoose.model('Account', accountSchema);

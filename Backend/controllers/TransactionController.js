@@ -1,31 +1,85 @@
 const Transaction = require('../models/TransactionModel');
+const Account = require('../models/AccountModel');
 const mongoose = require('mongoose');
 const dayjs = require('dayjs');
 const notify = require('../utils/notify');
 
 exports.createTransaction = async (req, res) => {
     try {
-        const { userId, bankAccountId, description, amount, type, date, note, category, tags } = req.body;
+        const { bankAccountId, description, amount, type, date, note, category, tags } = req.body;
+        const userId = req.user.id; // Use authenticated user's ID
         console.log("Creating transaction:", { userId, bankAccountId, description, amount, type, date, note, category, tags });
+        let dateToUse;
+        if (typeof date !== 'undefined' && date !== null && date !== '') {
+            let dateInput = date;
 
+            if (typeof date === 'string' && date.includes('T')) {
+                dateInput = date.split('T')[0]; // "2026-01-30"
+            }
 
-        const newTransaction = await Transaction.create({
+            let parsed = dayjs(dateInput);
+
+            if (!parsed.isValid()) {
+                if (typeof date === 'object') {
+                    if (date.$date) parsed = dayjs(date.$date);
+                    else if (typeof date.toISOString === 'function') parsed = dayjs(date.toISOString());
+                    else if (typeof date.year === 'number' && typeof date.month === 'number' && typeof date.date === 'number') {
+                        parsed = dayjs(new Date(date.year, date.month - 1, date.date));
+                    }
+                }
+
+                if (!parsed.isValid()) {
+                    const native = new Date(date);
+                    if (!isNaN(native.getTime())) parsed = dayjs(native);
+                }
+            }
+
+            if (!parsed.isValid()) {
+                console.error('[createTransaction] Date parsing failed:', { date, dateInput, parsed });
+                return res.status(400).json({ success: false, error: 'Invalid date format' });
+            }
+
+            dateToUse = parsed.toDate();
+        } else {
+            dateToUse = new Date();
+        }
+
+        const amtNum = Number(amount);
+        if (isNaN(amtNum)) {
+            return res.status(400).json({ success: false, error: 'Invalid amount' });
+        }
+
+        const transactionDoc = new Transaction({
             userId,
             accountId: bankAccountId,
             description,
             note,
-            amount,
+            amount: amtNum,
             type,
-            date,
+            date: dateToUse,
             category,
             tags
         });
-        if (type === 'income' && amount > 1000) {
+
+        const newTransaction = await transactionDoc.save();
+
+        // Update account balance
+        if (bankAccountId) {
+            const balanceChange = type === 'income' ? amtNum : -amtNum;
+            await Account.findByIdAndUpdate(
+                bankAccountId,
+                { $inc: { balance: balanceChange } },
+                { new: true }
+            );
+        }
+
+        const delta = type === 'income' ? amtNum : -amtNum;
+        if (type === 'income' && amtNum > 1000) {
             await notify({
                 userId,
                 type: 'transaction_income',
                 title: 'Large deposit received',
-                body: `Received ${amount} from ${description}`,
+                body: `Received ${amtNum} from ${description}`,
                 data: { transactionId: newTransaction._id.toString() },
                 priority: 'medium'
             });
@@ -35,7 +89,7 @@ exports.createTransaction = async (req, res) => {
             data: newTransaction
         });
     } catch (error) {
-
+        console.error('Error creating transaction:', error);
         res.status(500).json({
             success: false,
             error: error.message
@@ -81,21 +135,135 @@ exports.getTransactionById = async (req, res) => {
 
 exports.updateTransaction = async (req, res) => {
     try {
-        const { description, amount, type, category, note, tags, date } = req.body;
-        const transaction = await Transaction.findOneAndUpdate(
-            { userId: req.user.id, _id: req.params.id },
-            { description, amount, type, category, note, tags, date },
-            { new: true }
-        );
-        if (!transaction) {
+        const { description, amount, type, category, note, tags, date, bankAccountId } = req.body;
+        console.log('[updateTransaction] incoming:', { userId: req.user?.id, id: req.params.id, body: req.body });
+
+        const originalTransaction = await Transaction.findOne({ userId: req.user.id, _id: req.params.id });
+        console.log('[updateTransaction] originalTransaction:', originalTransaction);
+        if (!originalTransaction) {
             return res.status(404).json({
                 success: false,
                 message: 'Transaction not found'
             });
         }
+
+        const updateFields = {};
+        if (typeof description !== 'undefined') updateFields.description = description;
+        if (typeof category !== 'undefined') updateFields.category = category;
+        if (typeof note !== 'undefined') updateFields.note = note;
+        if (typeof tags !== 'undefined') updateFields.tags = tags;
+        if (typeof type !== 'undefined') updateFields.type = type;
+        if (typeof bankAccountId !== 'undefined') updateFields.accountId = bankAccountId;
+
+        let newAmount = originalTransaction.amount;
+        if (typeof amount !== 'undefined') {
+            const amtNum = Number(amount);
+            if (isNaN(amtNum)) {
+                return res.status(400).json({ success: false, error: 'Invalid amount' });
+            }
+            updateFields.amount = amtNum;
+            newAmount = amtNum;
+        }
+
+        // Validate and normalize date if provided
+        if (typeof date !== 'undefined') {
+            if (date === null || date === '') {
+                updateFields.date = null;
+            } else {
+                let dateInput = date;
+
+                if (typeof date === 'string' && date.includes('T')) {
+                    dateInput = date.split('T')[0]; // "2026-01-30"
+                }
+
+                let parsed = dayjs(dateInput);
+
+                if (!parsed.isValid()) {
+                    if (typeof date === 'object') {
+                        if (date.$date) parsed = dayjs(date.$date);
+                        else if (typeof date.toISOString === 'function') parsed = dayjs(date.toISOString());
+                    }
+                    if (!parsed.isValid()) {
+                        const native = new Date(date);
+                        if (!isNaN(native.getTime())) parsed = dayjs(native);
+                    }
+                }
+
+                if (!parsed.isValid()) {
+                    return res.status(400).json({ success: false, error: 'Invalid date format' });
+                }
+                updateFields.date = parsed.toDate();
+            }
+        }
+
+        const transaction = await Transaction.findOneAndUpdate(
+            { userId: req.user.id, _id: req.params.id },
+            updateFields,
+            { new: true }
+        );
+        console.log('[updateTransaction] after first update, transaction:', transaction);
+
+        // Update account balance if amount or type changed, or if account changed
+        const newType = type || originalTransaction.type;
+        const newAccountId = bankAccountId || originalTransaction.accountId;
+
+        // If the account ID changed, handle the old and new account balances
+        if (bankAccountId && bankAccountId !== originalTransaction.accountId) {
+            // Reverse effect from old account
+            if (originalTransaction.accountId) {
+                const reverseChange = originalTransaction.type === 'income' ? -originalTransaction.amount : originalTransaction.amount;
+                await Account.findByIdAndUpdate(
+                    originalTransaction.accountId,
+                    { $inc: { balance: reverseChange } },
+                    { new: true }
+                );
+            }
+
+            // Apply effect to new account
+            if (newAccountId) {
+                const newChange = newType === 'income' ? newAmount : -newAmount;
+                await Account.findByIdAndUpdate(
+                    newAccountId,
+                    { $inc: { balance: newChange } },
+                    { new: true }
+                );
+            }
+
+            // Update the accountId in the transaction
+            updateFields.accountId = newAccountId;
+        }
+        // If amount or type changed (but same account)
+        else if (newAccountId && (newAmount !== originalTransaction.amount || newType !== originalTransaction.type)) {
+            // Check if account exists
+            const account = await Account.findById(newAccountId);
+            if (account) {
+                // Reverse the original transaction's effect
+                const reverseChange = originalTransaction.type === 'income' ? -originalTransaction.amount : originalTransaction.amount;
+
+                // Apply the new transaction's effect
+                const newChange = newType === 'income' ? newAmount : -newAmount;
+
+                const totalChange = reverseChange + newChange;
+
+                await Account.findByIdAndUpdate(
+                    newAccountId,
+                    { $inc: { balance: totalChange } },
+                    { new: true }
+                );
+            }
+        }
+
+        // Re-fetch the transaction with updated fields
+        const updatedTransaction = await Transaction.findOneAndUpdate(
+            { userId: req.user.id, _id: req.params.id },
+            updateFields,
+            { new: true }
+        );
+        console.log('[updateTransaction] updatedTransaction:', updatedTransaction);
+
         res.status(200).json({
             success: true,
-            data: transaction
+            data: updatedTransaction
         });
     } catch (error) {
         res.status(500).json({
@@ -114,6 +282,17 @@ exports.deleteTransaction = async (req, res) => {
                 message: 'Transaction not found'
             });
         }
+
+        // Revert account balance when transaction is deleted
+        if (transaction.accountId) {
+            const balanceChange = transaction.type === 'income' ? -transaction.amount : transaction.amount;
+            await Account.findByIdAndUpdate(
+                transaction.accountId,
+                { $inc: { balance: balanceChange } },
+                { new: true }
+            );
+        }
+
         res.status(200).json({
             success: true,
             data: {}
@@ -219,6 +398,7 @@ exports.exportTransactions = async (req, res) => {
 
 exports.getTransactionTrends = async (req, res) => {
     try {
+        console.log("Fetching......")
         const userId = req.user.id;
         const { startDate, endDate, granularity = 'day', page = 1, limit = 100, range } = req.query;
 
@@ -231,7 +411,6 @@ exports.getTransactionTrends = async (req, res) => {
             start = new Date(startDate);
             end = new Date(endDate);
         } else if (range) {
-            // backward compatible: range is number of days
             const days = parseInt(range, 10) || 30;
             end = new Date();
             start = new Date();
@@ -552,7 +731,7 @@ exports.getForecast = async (req, res) => {
     try {
         const userObjectId = new mongoose.Types.ObjectId(req.user.id);
         const months = parseInt(req.query.months, 10) || 3;
-        const lookback = parseInt(req.query.lookback, 10) || 6; 
+        const lookback = parseInt(req.query.lookback, 10) || 6;
 
         const startDate = dayjs()
             .subtract(lookback - 1, 'month')
@@ -688,7 +867,15 @@ exports.bulkCreateTransactions = async (req, res) => {
         }
 
         const docs = transactions.map((t) => {
-            const date = t.date ? new Date(t.date) : new Date();
+            // Validate/normalize date; fall back to current date when invalid
+            let date;
+            if (typeof t.date !== 'undefined' && t.date !== null && t.date !== '') {
+                const parsed = dayjs(t.date);
+                date = parsed.isValid() ? parsed.toDate() : new Date();
+            } else {
+                date = new Date();
+            }
+
             return {
                 userId: req.user.id,
                 accountId: t.bankAccountId || t.accountId || null,
