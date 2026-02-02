@@ -1,5 +1,5 @@
 const User = require('../models/UserModel');
-const generateToken = require('../utils/generateToken');
+const { generateTokens } = require('../utils/generateToken');
 
 const googleAuth = async (req, res, next) => {
     const { email, given_name, family_name, picture } = req.user?._json;
@@ -16,14 +16,30 @@ const googleAuth = async (req, res, next) => {
                 imageUrl: picture
             });
         }
-        const token = generateToken(user);
+
+        const tokens = generateTokens(user._id);
+
+        // Set secure HTTP-only cookies
+        const isProduction = process.env.NODE_ENV === 'production';
+        res.cookie('accessToken', tokens.accessToken, {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: 'strict',
+            maxAge: 15 * 60 * 1000, // 15 minutes
+            path: '/',
+        });
+
+        res.cookie('refreshToken', tokens.refreshToken, {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+            path: '/',
+        });
 
         req.user = user;
-        // REMOVE cookie logic
-        // res.cookie('token', token, { ... });
-
-        // Instead, redirect with token as query param
-        res.redirect(`http://localhost:5173/?token=${token}`);
+        // Redirect to dashboard without token in query param (it's in cookie now)
+        res.redirect(`http://localhost:5173/dashboard`);
     } catch (error) {
         console.error("Error in Google Auth Middleware:", error);
         res.status(500).send("Internal Server Error");

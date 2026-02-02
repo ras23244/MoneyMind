@@ -42,6 +42,8 @@ function Signup() {
                 },
                 email: values.email,
                 password: values.password
+            }, {
+                withCredentials: true // Important: Send/receive cookies
             });
             if (res.status === 201) {
                 toast.success('Registration successful!');
@@ -149,7 +151,7 @@ function Signup() {
 
                                 <Divider className='pt-2'>OR</Divider>
                                 <button
-                                onClick={handleGoogleSignup}
+                                    onClick={handleGoogleSignup}
                                     type="button"
                                     className="w-full flex items-center justify-center gap-3 px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-700 font-medium shadow-sm hover:bg-gray-50 transition"
                                 >

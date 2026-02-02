@@ -14,6 +14,7 @@ router.post('/register', authLimiter, [
     authController.register);
 router.post('/login', authLimiter, authController.login);
 router.post('/logout', authLimiter, authController.logout);
+router.post('/refresh-token', authLimiter, authController.refreshAccessToken);
 router.get('/me', protect, authLimiter, authController.getMe);
 router.post('/forget-password', authLimiter, authController.forgetPassword);
 router.post('/verify-otp', authLimiter, authController.verifyOtp);

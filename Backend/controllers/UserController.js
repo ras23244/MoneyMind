@@ -1,9 +1,31 @@
 const express = require('express');
 const User = require('../models/UserModel');
-const generateToken = require('../utils/generateToken');
+const { generateTokens } = require('../utils/generateToken');
 const sendMail = require('../utils/sendMail');
 const bcrypt = require('bcrypt');
 const Account = require('../models/AccountModel');
+const jwt = require('jsonwebtoken');
+
+// Helper to set secure HTTP-only cookies
+const setAuthCookies = (res, tokens) => {
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    res.cookie('accessToken', tokens.accessToken, {
+        httpOnly: true,
+        secure: isProduction, // Only HTTPS in production
+        sameSite: 'strict', // CSRF protection
+        maxAge: 15 * 60 * 1000, // 15 minutes
+        path: '/',
+    });
+
+    res.cookie('refreshToken', tokens.refreshToken, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        path: '/',
+    });
+};
 
 exports.register = async (req, res) => {
     try {
@@ -19,12 +41,16 @@ exports.register = async (req, res) => {
             password: password
         });
 
-        const token = generateToken(user);
+        const tokens = generateTokens(user._id);
+        setAuthCookies(res, tokens);
 
         res.status(201).json({
-            token: token,
             message: 'User registered successfully',
-            user: { id: user._id, name: `${user.fullname.firstname} ${user.fullname.lastname}`, email: user.email }
+            user: {
+                _id: user._id,
+                name: `${user.fullname.firstname} ${user.fullname.lastname}`,
+                email: user.email
+            }
         });
     } catch (err) {
         res.status(500).json({ message: 'Server error', error: err.message });
@@ -47,11 +73,11 @@ exports.login = async (req, res) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        const token = generateToken(user);
+        const tokens = generateTokens(user._id);
+        setAuthCookies(res, tokens);
 
         res.status(200).json({
             message: 'Login successful',
-            token,
             user: {
                 _id: user._id,
                 fullname: user.fullname,
@@ -66,7 +92,36 @@ exports.login = async (req, res) => {
 };
 
 exports.logout = (req, res) => {
+    // Clear HTTP-only cookies
+    res.clearCookie('accessToken', { path: '/', httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+    res.clearCookie('refreshToken', { path: '/', httpOnly: true, secure: process.env.NODE_ENV === 'production' });
     res.status(200).json({ message: 'Logged out successfully' });
+};
+
+exports.refreshAccessToken = async (req, res) => {
+    try {
+        const refreshToken = req.cookies.refreshToken;
+
+        if (!refreshToken) {
+            return res.status(401).json({ message: 'No refresh token provided' });
+        }
+
+        const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id);
+
+        if (!user) {
+            return res.status(401).json({ message: 'User not found' });
+        }
+
+        const tokens = generateTokens(user._id);
+        setAuthCookies(res, tokens);
+
+        res.status(200).json({ message: 'Token refreshed successfully' });
+    } catch (err) {
+        res.clearCookie('accessToken', { path: '/', httpOnly: true });
+        res.clearCookie('refreshToken', { path: '/', httpOnly: true });
+        return res.status(401).json({ message: 'Invalid refresh token' });
+    }
 };
 
 exports.getMe = async (req, res) => {

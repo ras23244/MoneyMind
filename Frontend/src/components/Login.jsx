@@ -32,12 +32,13 @@ function Login() {
       const res = await axios.post(`${import.meta.env.VITE_BASE_URL}users/login`, {
         email: values.email,
         password: values.password
+      }, {
+        withCredentials: true // Important: Send/receive cookies
       });
 
       if (res.status === 200) {
         toast.success('Login successful!');
-        localStorage.setItem('token', res.data.token);
-        login(res.data.user, res.data.token);
+        login(res.data.user);
         // Redirect based on bankAccounts
         if (Array.isArray(res.data.user.bankAccounts) && res.data.user.bankAccounts.length > 0) {
           navigate("/dashboard");

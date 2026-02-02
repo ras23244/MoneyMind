@@ -1,15 +1,16 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import axios from "axios";
-import { io } from 'socket.io-client';
-export const UserContext = createContext();
+import React, {
+    createContext,
+    useContext,
+    useEffect,
+    useState
+} from "react";
+import { io } from "socket.io-client";
+import axiosInstance from "../lib/axiosInstance";
+
+export const UserContext = createContext(null);
+
 export const UserProvider = ({ children }) => {
-    const [user, setUser] = useState(() => {
-        const storedUser = localStorage.getItem("user");
-        return storedUser ? JSON.parse(storedUser) : null;
-    });
-
-    const [token, setToken] = useState(() => localStorage.getItem("token"));
-
+    const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [socket, setSocket] = useState(null);
     const [notifications, setNotifications] = useState([]);
@@ -17,175 +18,171 @@ export const UserProvider = ({ children }) => {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                if (!token) {
-                    setUser(null);
-                    setLoading(false);
-                    return;
-                }
-
-                const res = await axios.get(
-                    `${import.meta.env.VITE_BASE_URL}users/me`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
-                );
-                console.log('Fetched user data from server:', res.data);
+                const res = await axiosInstance.get("/users/me");
+                console.log("Fetched user:", res.data);
                 setUser(res.data);
-                localStorage.setItem("user", JSON.stringify(res.data));
             } catch (err) {
-                console.error('Failed to fetch user:', err);
+                console.error("Failed to fetch user:", err);
                 setUser(null);
-                localStorage.removeItem("user");
             } finally {
                 setLoading(false);
             }
         };
 
         fetchUser();
-    }, [token]);
-
+    }, []);
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (!token || !user) return;
+        if (!user) return;
 
-        const base = (import.meta.env.VITE_BASE_URL || '').replace(/\/$/, '');
-        const s = io(base, { auth: { token }, transports: ['websocket'] });
+        const baseURL = (import.meta.env.VITE_BASE_URL || "").replace(/\/$/, "");
 
-        s.on('connect', () => {
-            console.log('socket connected', s.id);
+        const s = io(baseURL, {
+            withCredentials: true,
+            transports: ["websocket"],
+            auth: {
+                token: localStorage.getItem("tempSocketToken") || undefined,
+            },
         });
 
-        s.on('notification', (n) => {
+        s.on("connect", () => {
+            console.log("Socket connected:", s.id);
+        });
 
+        s.on("notification", (n) => {
             const normalized = {
-                id: n.id || n._id || String(n._id),
+                id: n._id || n.id,
                 type: n.type,
                 title: n.title,
                 body: n.body,
                 data: n.data,
-                priority: n.priority || 'low',
+                priority: n.priority || "low",
                 read: n.read || false,
                 createdAt: n.createdAt || new Date().toISOString(),
             };
+
             setNotifications((prev) => [normalized, ...prev]);
         });
 
         setSocket(s);
 
         return () => {
-            try { s.disconnect(); } catch (e) { }
+            try {
+                s.disconnect();
+            } catch (e) { }
             setSocket(null);
         };
     }, [user]);
 
+
     useEffect(() => {
+        if (!user) return;
+
         const fetchNotifications = async () => {
             try {
-                const token = localStorage.getItem('token');
-                if (!token || !user) return;
-                const res = await axios.get(`${import.meta.env.VITE_BASE_URL}notifications?unread=true`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                const data = (res.data?.data || res.data || []).map((n) => ({
+                const res = await axiosInstance.get("/notifications?unread=true");
+                const list = (res.data?.data || res.data || []).map((n) => ({
                     id: n._id || n.id,
                     type: n.type,
                     title: n.title,
                     body: n.body,
                     data: n.data,
-                    priority: n.priority || 'low',
+                    priority: n.priority || "low",
                     read: n.read || false,
                     createdAt: n.createdAt,
                 }));
-                setNotifications(data);
+
+                setNotifications(list);
             } catch (e) {
-                console.error('Failed to fetch notifications', e.message);
+                console.error("Failed to fetch notifications:", e.message);
             }
         };
+
         fetchNotifications();
     }, [user]);
 
     const markNotificationRead = async (id) => {
         try {
-            const token = localStorage.getItem('token');
-            await axios.patch(`${import.meta.env.VITE_BASE_URL}notifications/${id}/read`, null, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            // remove from current unread list so it disappears from inbox
+            await axiosInstance.patch(`/notifications/${id}/read`);
             setNotifications((prev) => prev.filter((n) => n.id !== id));
             return true;
         } catch (e) {
-            console.error('markNotificationRead error', e.message);
+            console.error("markNotificationRead error:", e.message);
             return false;
         }
     };
 
     const markAllRead = async () => {
         try {
-            const token = localStorage.getItem('token');
-            await axios.patch(`${import.meta.env.VITE_BASE_URL}notifications/read-all`, null, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            // clear unread list
+            await axiosInstance.patch("/notifications/read-all");
             setNotifications([]);
             return true;
         } catch (e) {
-            console.error('markAllRead error', e.message);
+            console.error("markAllRead error:", e.message);
             return false;
         }
     };
 
     const deleteNotification = async (id) => {
         try {
-            const token = localStorage.getItem('token');
-            await axios.delete(`${import.meta.env.VITE_BASE_URL}notifications/${id}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            await axiosInstance.delete(`/notifications/${id}`);
             setNotifications((prev) => prev.filter((n) => n.id !== id));
             return true;
         } catch (e) {
-            console.error('deleteNotification error', e.message);
+            console.error("deleteNotification error:", e.message);
             return false;
         }
     };
 
-    const login = (userData, token) => {
-        if (token) {
-            localStorage.setItem("token", token);
-            setToken(token);
-        }
+    const login = (userData) => {
+        setUser(userData);
     };
 
     const patchUser = (partialData) => {
         let updatedUser;
-        setUser((prevUser) => {
-            console.log("Patching user with data:", partialData);
-            console.log("Previous user data:", prevUser);
-            updatedUser = { ...prevUser, ...partialData };
-            localStorage.setItem("user", JSON.stringify(updatedUser));
+        setUser((prev) => {
+            updatedUser = { ...prev, ...partialData };
             return updatedUser;
         });
         return updatedUser;
     };
 
-    const logout = () => {
-        setUser(null);
-        localStorage.removeItem("user");
-        localStorage.removeItem("token");
-        setToken(null);
-        try { socket && socket.disconnect(); } catch (e) { }
-        setNotifications([]);
-    };
-
     const updateUser = (newUserData) => {
         setUser(newUserData);
-        localStorage.setItem("user", JSON.stringify(newUserData));
+    };
+
+    const logout = async () => {
+        try {
+            await axiosInstance.post("/users/logout");
+        } catch (e) {
+            console.error("Logout request failed:", e);
+        } finally {
+            setUser(null);
+            try {
+                socket && socket.disconnect();
+            } catch (e) { }
+            setNotifications([]);
+            localStorage.removeItem("user");
+        }
     };
 
     return (
-        <UserContext.Provider value={{ user, setUser, login, patchUser, logout, updateUser, loading, socket, notifications, markNotificationRead, markAllRead, deleteNotification }}>
+        <UserContext.Provider
+            value={{
+                user,
+                setUser,
+                loading,
+                socket,
+                notifications,
+                login,
+                logout,
+                patchUser,
+                updateUser,
+                markNotificationRead,
+                markAllRead,
+                deleteNotification,
+            }}
+        >
             {children}
         </UserContext.Provider>
     );

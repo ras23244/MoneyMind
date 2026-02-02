@@ -19,7 +19,7 @@ const goalRoutes = require('./routes/GoalRoutes');
 const noteRoutes = require('./routes/NoteRoutes');
 const billRoutes = require('./routes/BillRoutes');
 const notificationRoutes = require('./routes/NotificationRoutes');
-const expressMongoSanitize = require('@exortek/express-mongo-sanitize'); 
+const expressMongoSanitize = require('@exortek/express-mongo-sanitize');
 const { generalLimiter } = require('./middlewares/rateLimiter');
 
 
@@ -27,7 +27,10 @@ const { generalLimiter } = require('./middlewares/rateLimiter');
 app.use(generalLimiter);
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-    credentials: true,
+    credentials: true, // Allow credentials (cookies)
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    maxAge: 86400 // 24 hours
 }))
 app.use(session({
     secret: process.env.SESSION_SECRET || 'your-secret-key',
