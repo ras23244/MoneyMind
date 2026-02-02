@@ -24,34 +24,7 @@ export default function BudgetHistory({ budgets, transactions }) {
         return acc;
     }, {});
 
-    const handleScroll = () => {
-        const el = scrollRef.current;
-        if (!el) return;
 
-        const tolerance = 2;
-        setAtTop(el.scrollTop <= tolerance);
-        setAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight <= tolerance);
-    };
-
-    useEffect(() => {
-        const el = scrollRef.current;
-        if (!el) return;
-        el.addEventListener("scroll", handleScroll);
-        return () => el.removeEventListener("scroll", handleScroll);
-    }, []);
-
-    const handleScrollIndicatorClick = () => {
-        const el = scrollRef.current;
-        if (!el) return;
-
-        if (atTop) {
-            el.scrollBy({ top: 150, behavior: "smooth" });
-        } else if (atBottom) {
-            el.scrollBy({ top: -150, behavior: "smooth" });
-        } else {
-            el.scrollBy({ top: 150, behavior: "smooth" });
-        }
-    };
 
     return (
         <Card className="bg-card-dark border border-white/10 mt-8">
@@ -90,15 +63,6 @@ export default function BudgetHistory({ budgets, transactions }) {
                             ))
                     )}
                 </div>
-
-                {budgets.length > 6 && (
-                    <div
-                        className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-white/50 animate-bounce text-2xl cursor-pointer select-none"
-                        onClick={handleScrollIndicatorClick}
-                    >
-                        {atTop ? "▼" : atBottom ? "▲" : "▼"}
-                    </div>
-                )}
             </CardContent>
         </Card>
     );

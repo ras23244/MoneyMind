@@ -152,11 +152,9 @@ export const UserProvider = ({ children }) => {
     };
 
     const login = (userData, token) => {
-        // Store token first to trigger fetchUser effect
         if (token) {
             localStorage.setItem("token", token);
             setToken(token);
-            // Don't set user yet—let fetchUser effect validate from server
         }
     };
 

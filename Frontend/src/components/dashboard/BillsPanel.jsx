@@ -7,13 +7,11 @@ import AddBillDialog from './AddBillDialog';
 import dayjs from 'dayjs';
 import { motion } from 'framer-motion';
 import {
-    ChevronDown,
-    ChevronUp,
     PlusCircle,
     Wallet,
     AlertCircle,
     RefreshCw,
-    Edit3,
+
     Trash2,
     Pencil
 } from 'lucide-react';
@@ -27,37 +25,19 @@ const currency = (n) =>
 
 export default function BillsPanel({ userId }) {
     const [viewMode, setViewMode] = useState('upcoming');
-    const [expanded, setExpanded] = useState(false);
     const [openAddDialog, setOpenAddDialog] = useState(false);
     const { data: bills = [], isLoading } = useBills(userId, { days: 30 });
     const { data: summary = {}, isLoading: summaryLoading } = useBillSummary(userId);
     const updateBillStatus = useUpdateBillStatus();
 
     const listRef = useRef(null);
-    const [showScrollUp, setShowScrollUp] = useState(false);
-    const [showScrollDown, setShowScrollDown] = useState(false);
+
 
 
     const deleteBillMutation = useDeleteBill(userId);
     const editBillMutation = useUpdateBillStatus(userId);
 
-    useEffect(() => {
-        const el = listRef.current;
-        if (!el) return;
-        const handleScroll = () => {
-            setShowScrollUp(el.scrollTop > 0);
-            setShowScrollDown(el.scrollTop + el.clientHeight < el.scrollHeight - 5);
-        };
-        handleScroll();
-        el.addEventListener('scroll', handleScroll);
-        return () => el.removeEventListener('scroll', handleScroll);
-    }, [bills]);
 
-    const scrollByAmount = (offset) => {
-        if (listRef.current) {
-            listRef.current.scrollBy({ top: offset, behavior: 'smooth' });
-        }
-    };
 
     const groupedBills = bills.reduce((acc, bill) => {
         const weekStart = dayjs(bill.nextDueDate).startOf('week').format('YYYY-MM-DD');
@@ -89,8 +69,6 @@ export default function BillsPanel({ userId }) {
             });
         }
     };
-
-
 
     return (
         <Card className="bg-gradient-to-br from-slate-900/80 to-slate-800/60 border border-white/10 rounded-2xl shadow-lg h-full">
@@ -146,25 +124,7 @@ export default function BillsPanel({ userId }) {
                     ))}
                 </div>
 
-                <motion.button
-                    onClick={() => scrollByAmount(-200)}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: showScrollUp ? 1 : 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="absolute right-4 top-[40%] z-10 bg-slate-700/80 hover:bg-slate-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg"
-                >
-                    <ChevronUp className="w-4 h-4" />
-                </motion.button>
-
-                <motion.button
-                    onClick={() => scrollByAmount(200)}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: showScrollDown ? 1 : 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="absolute right-4 bottom-12 z-10 bg-slate-700/80 hover:bg-slate-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg"
-                >
-                    <ChevronDown className="w-4 h-4" />
-                </motion.button>
+             
 
                 <div className="mt-6">
                     <Button

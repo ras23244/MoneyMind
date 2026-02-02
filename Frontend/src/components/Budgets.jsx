@@ -161,26 +161,6 @@ export default function Budgets() {
         [budgets]
     );
 
-    const handleScroll = () => {
-        const el = scrollRef.current;
-        if (!el) return;
-        const tolerance = 2;
-        setAtTop(el.scrollTop <= tolerance);
-        setAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight <= tolerance);
-    };
-
-    useEffect(() => {
-        const el = scrollRef.current;
-        if (!el) return;
-        el.addEventListener("scroll", handleScroll);
-        return () => el.removeEventListener("scroll", handleScroll);
-    }, []);
-
-    const handleScrollIndicatorClick = () => {
-        const el = scrollRef.current;
-        if (!el) return;
-        el.scrollBy({ top: atTop ? 150 : atBottom ? -150 : 150, behavior: "smooth" });
-    };
 
     const handleAddBudget = (newBudget) => {
         createBudgetMutation.mutate({
@@ -368,15 +348,6 @@ export default function Budgets() {
                                     </p>
                                 )}
                             </div>
-
-                            {currentBudgets.length > 6 && (
-                                <div
-                                    className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-white/50 animate-bounce text-2xl cursor-pointer select-none"
-                                    onClick={handleScrollIndicatorClick}
-                                >
-                                    {atTop ? "▼" : atBottom ? "▲" : "▼"}
-                                </div>
-                            )}
                         </div>
                     )}
                 </>
