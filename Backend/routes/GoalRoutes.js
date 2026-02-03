@@ -3,11 +3,12 @@ const router = express.Router();
 const protect = require('../middlewares/authMiddleware');
 const GoalController = require('../controllers/GoalController');
 const { body } = require('express-validator');
+const { generalLimiter } = require('../middlewares/rateLimiter');
 
 
-router.get('/get-goals', protect, GoalController.getGoals);
+router.get('/get-goals', protect, generalLimiter, GoalController.getGoals);
 
-router.post('/create-goal', protect, [
+router.post('/create-goal', protect, generalLimiter, [
     body("title").notEmpty().withMessage("Title is required"),
     body("targetAmount")
         .isFloat({ gt: 0 })
@@ -21,8 +22,8 @@ router.post('/create-goal', protect, [
 ], GoalController.createGoal);
 
 
-router.put('/update-goal/:id', protect, GoalController.updateGoal);
+router.put('/update-goal/:id', protect, generalLimiter, GoalController.updateGoal);
 
-router.delete('/delete-goal/:id', protect, GoalController.deleteGoal);
+router.delete('/delete-goal/:id', protect, generalLimiter, GoalController.deleteGoal);
 
 module.exports = router;

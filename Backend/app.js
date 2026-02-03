@@ -8,6 +8,8 @@ dotenv.config();
 const connectToDb = require('./db/db');
 connectToDb();
 app.use(cookieParser());
+// Normalize frontend URL to avoid mismatched trailing slash in CORS
+const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
 const passport = require('passport');
 const googleAuth = require('./middlewares/googleAuth');
 const googleStrategy = require('passport-google-oauth20').Strategy;
@@ -22,11 +24,8 @@ const notificationRoutes = require('./routes/NotificationRoutes');
 const expressMongoSanitize = require('@exortek/express-mongo-sanitize');
 const { generalLimiter } = require('./middlewares/rateLimiter');
 
-
-
-app.use(generalLimiter);
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: frontendUrl,
     credentials: true, // Allow credentials (cookies)
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],

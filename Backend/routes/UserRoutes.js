@@ -3,7 +3,7 @@ const router = express.Router();
 const authController = require('../controllers/UserController');
 const protect = require('../middlewares/authMiddleware');
 const { body } = require('express-validator')
-const { authLimiter } = require('../middlewares/rateLimiter');
+const { authLimiter,generalLimiter } = require('../middlewares/rateLimiter');
 
 router.post('/register', authLimiter, [
     body('email').isEmail().withMessage('Invalid Email'),
@@ -15,7 +15,7 @@ router.post('/register', authLimiter, [
 router.post('/login', authLimiter, authController.login);
 router.post('/logout', authLimiter, authController.logout);
 router.post('/refresh-token', authLimiter, authController.refreshAccessToken);
-router.get('/me', protect, authLimiter, authController.getMe);
+router.get('/me', protect, generalLimiter, authController.getMe);
 router.post('/forget-password', authLimiter, authController.forgetPassword);
 router.post('/verify-otp', authLimiter, authController.verifyOtp);
 router.post('/get-time', authLimiter, authController.getTime);
