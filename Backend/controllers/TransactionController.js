@@ -6,96 +6,69 @@ const notify = require('../utils/notify');
 
 exports.createTransaction = async (req, res) => {
     try {
-        const { bankAccountId, description, amount, type, date, note, category, tags } = req.body;
-        const userId = req.user.id; // Use authenticated user's ID
-        console.log("Creating transaction:", { userId, bankAccountId, description, amount, type, date, note, category, tags });
-        let dateToUse;
-        if (typeof date !== 'undefined' && date !== null && date !== '') {
-            let dateInput = date;
+        const {
+            bankAccountId,
+            description,
+            amount,
+            type,
+            date,
+            note,
+            category,
+            tags,
+        } = req.body;
 
-            if (typeof date === 'string' && date.includes('T')) {
-                dateInput = date.split('T')[0]; // "2026-01-30"
-            }
-
-            let parsed = dayjs(dateInput);
-
-            if (!parsed.isValid()) {
-                if (typeof date === 'object') {
-                    if (date.$date) parsed = dayjs(date.$date);
-                    else if (typeof date.toISOString === 'function') parsed = dayjs(date.toISOString());
-                    else if (typeof date.year === 'number' && typeof date.month === 'number' && typeof date.date === 'number') {
-                        parsed = dayjs(new Date(date.year, date.month - 1, date.date));
-                    }
-                }
-
-                if (!parsed.isValid()) {
-                    const native = new Date(date);
-                    if (!isNaN(native.getTime())) parsed = dayjs(native);
-                }
-            }
-
-            if (!parsed.isValid()) {
-                console.error('[createTransaction] Date parsing failed:', { date, dateInput, parsed });
-                return res.status(400).json({ success: false, error: 'Invalid date format' });
-            }
-
-            dateToUse = parsed.toDate();
-        } else {
-            dateToUse = new Date();
-        }
+        const userId = req.user.id;
 
         const amtNum = Number(amount);
-        if (isNaN(amtNum)) {
-            return res.status(400).json({ success: false, error: 'Invalid amount' });
-        }
 
-        const transactionDoc = new Transaction({
+        const transaction = await Transaction.create({
             userId,
-            accountId: bankAccountId,
+            accountId: bankAccountId || null,
             description,
             note,
             amount: amtNum,
             type,
-            date: dateToUse,
             category,
-            tags
+            tags,
+            date: date || new Date(),
+            source: bankAccountId ? 'automatic' : 'manual',
         });
 
-        const newTransaction = await transactionDoc.save();
-
-        // Update account balance
+        // Update bank balance only if linked to account
         if (bankAccountId) {
             const balanceChange = type === 'income' ? amtNum : -amtNum;
+
             await Account.findByIdAndUpdate(
                 bankAccountId,
-                { $inc: { balance: balanceChange } },
-                { new: true }
+                { $inc: { balance: balanceChange } }
             );
         }
 
-        const delta = type === 'income' ? amtNum : -amtNum;
+        // Notification logic
         if (type === 'income' && amtNum > 1000) {
             await notify({
                 userId,
                 type: 'transaction_income',
                 title: 'Large deposit received',
                 body: `Received ${amtNum} from ${description}`,
-                data: { transactionId: newTransaction._id.toString() },
-                priority: 'medium'
+                data: { transactionId: transaction._id.toString() },
+                priority: 'medium',
             });
         }
+
         res.status(201).json({
             success: true,
-            data: newTransaction
+            data: transaction,
         });
     } catch (error) {
         console.error('Error creating transaction:', error);
         res.status(500).json({
             success: false,
-            error: error.message
+            error: error.message,
         });
     }
-}
+};
+
 
 exports.getTransactions = async (req, res) => {
     try {

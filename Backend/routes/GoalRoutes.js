@@ -22,7 +22,19 @@ router.post('/create-goal', protect, generalLimiter, [
 ], GoalController.createGoal);
 
 
-router.put('/update-goal/:id', protect, generalLimiter, GoalController.updateGoal);
+router.put('/update-goal/:id', protect, generalLimiter,[
+    body("title").optional().notEmpty().withMessage("Title cannot be empty"),
+    body("targetAmount")
+        .optional()
+        .isFloat({ gt: 0 })
+        .withMessage("Target amount must be greater than 0"),
+    body("currentAmount")
+        .optional()
+        .isFloat({ min: 0 })
+        .withMessage("Current amount cannot be negative"),
+    body("startDate").optional().isISO8601().withMessage("Invalid start date"),
+    body("endDate").optional().isISO8601().withMessage("Invalid end date"),
+], GoalController.updateGoal);
 
 router.delete('/delete-goal/:id', protect, generalLimiter, GoalController.deleteGoal);
 
