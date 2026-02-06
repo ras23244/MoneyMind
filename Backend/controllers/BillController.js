@@ -129,7 +129,6 @@ exports.getUpcomingBills = async (req, res) => {
 
 exports.updateBillStatus = async (req, res) => {
     try {
-        // route uses :id in params; accept either 'id' or 'billId' for robustness
         const billId = req.params.id || req.params.billId;
         const { status, transactionId } = req.body;
         const userId = req.user.id;

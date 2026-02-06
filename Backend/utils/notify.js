@@ -1,6 +1,5 @@
 const Notification = require('../models/Notification');
 const socketUtil = require('./socket');
-
 /**
  * Create a notification document and emit to user's socket room if connected.
  * @param {Object} opts { userId, type, title, body, data, priority }

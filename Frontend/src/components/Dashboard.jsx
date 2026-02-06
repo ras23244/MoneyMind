@@ -1,29 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import {
-    ResponsiveContainer,
-    LineChart,
-    Line,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    PieChart,
-    Pie,
-    Cell,
-} from 'recharts';
 import AddBillDialog from './dashboard/AddBillDialog';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useUser } from "../context/UserContext";
 import { useTransactions } from "./hooks/useTransactions";
 import { useBudgets } from "./hooks/useBudgets";
 import { useGoals } from "./hooks/useGoals";
-
 import { useBills, useBillSummary } from './hooks/useBills';
 import { useNavigate } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
-
 import BalanceCards from './BalanceCards';
-
 import dayjs from "dayjs";
 import NotesPanel from './NotesPanel';
 
@@ -36,7 +19,6 @@ import {
     useSpendingHeatmap,
     useTrendData
 } from './hooks/useAggregatedData';
-import { useCategoryAggregation } from './hooks/useAggregatedData';
 
 const currency = (n) =>
     new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
@@ -85,21 +67,7 @@ export default function Dashboard() {
     const [catRange, setCatRange] = useState('1M'); // '1M' | '3M' | '6M' | 'custom'
     const [catModalOpen, setCatModalOpen] = useState(false);
     const [customStart, setCustomStart] = useState(dayjs().startOf('month').format('YYYY-MM-DD'));
-    const [customEnd, setCustomEnd] = useState(dayjs().endOf('month').format('YYYY-MM-DD'));
-
-    const aggregateFromTxs = (txs, start, end) => {
-        const map = {};
-        (txs || []).forEach((t) => {
-            if (!t.date) return;
-            const d = dayjs(t.date).startOf('day');
-            if (d.isBefore(dayjs(start).startOf('day')) || d.isAfter(dayjs(end).endOf('day'))) return;
-            const amt = Math.abs(Number(t.amount || 0));
-            if (!amt) return;
-            const cat = t.category || t.description || 'Other';
-            map[cat] = (map[cat] || 0) + amt;
-        });
-        return Object.keys(map).map(k => ({ name: k, value: map[k] })).sort((a, b) => b.value - a.value);
-    };
+    const [customEnd, setCustomEnd] = useState(dayjs().endOf('month').format('YYYY-MM-DD'))
 
     const budgetsUi = useMemo(() => budgets.map(b => ({
         name: b.category || 'Other',
@@ -236,8 +204,6 @@ export default function Dashboard() {
                             onNavigate={() => navigate('/transactions')}
                         />
                     </div>
-
-               
 
                     <div className="lg:col-span-3">
                         <div className="bg-slate-800/60 rounded-xl p-4 border border-white/10 shadow-md max-w-[850px] mx-auto">

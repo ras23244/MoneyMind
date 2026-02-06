@@ -145,6 +145,8 @@ export default function BillsPanel({ userId }) {
 function BillItem({ bill, updateBillStatus, handleEditBill, handleDeleteBill }) {
     const [hovered, setHovered] = useState(false);
 
+    console.log("bill",bill);
+
     return (
         <motion.div
             onMouseEnter={() => setHovered(true)}
