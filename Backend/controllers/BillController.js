@@ -4,18 +4,24 @@ const notify = require('../utils/notify');
 
 exports.createBill = async (req, res) => {
     try {
-        const { title, amount, dueDate, category, frequency, reminderDays, notes, recurring, autopay } = req.body;
+        const {
+            title,
+            amount,
+            dueDate,
+            frequency = 'monthly',
+            reminderDays = 3,
+            recurring = true
+        } = req.body;
+
         const userId = req.user.id;
 
-        // Validate required fields
-        if (!title || !amount || !dueDate || !category) {
+        if (!title || !amount || !dueDate) {
             return res.status(400).json({
                 success: false,
-                error: 'Missing required fields: title, amount, dueDate, and category are required'
+                error: 'Missing required fields: title, amount, dueDate'
             });
         }
 
-        // Validate amount is a positive number
         if (isNaN(amount) || amount <= 0) {
             return res.status(400).json({
                 success: false,
@@ -23,52 +29,45 @@ exports.createBill = async (req, res) => {
             });
         }
 
-        // Sanitize autopay.accountId to avoid passing empty string to ObjectId field
-        const autopayData = { enabled: false };
-        if (autopay) {
-            autopayData.enabled = !!autopay.enabled;
-            // only include accountId when it's a non-empty string
-            if (autopay.accountId && String(autopay.accountId).trim() !== '') {
-                autopayData.accountId = autopay.accountId;
-            }
-        }
+        const isRecurring =
+            frequency === 'one-time' ? false : recurring;
 
-        const billData = {
+        const bill = await Bill.create({
             userId,
             title,
             amount: Number(amount),
             dueDate: new Date(dueDate),
-            category,
-            frequency: frequency || 'monthly',
-            reminderDays: reminderDays || 3,
-            notes,
-            recurring: recurring ?? true,
-            autopay: autopayData
-        };
+            frequency,
+            reminderDays,
+            recurring: isRecurring
+        });
 
-        const bill = await Bill.create(billData);
         await notify({
             userId,
             type: 'bill_created',
             title: 'New bill added',
-            body: `${title} due ${dayjs(bill.nextDueDate || bill.dueDate).format('MMM D')}`,
+            body: `${title} due ${dayjs(bill.nextDueDate).format('MMM D')}`,
             data: { billId: bill._id.toString() },
             priority: 'low'
         });
+
         res.status(201).json({
             success: true,
             data: bill
         });
     } catch (error) {
-        console.error('Error creating bill:', error);
         res.status(error.name === 'ValidationError' ? 400 : 500).json({
             success: false,
-            error: error.name === 'ValidationError'
-                ? Object.values(error.errors).map(err => err.message).join(', ')
-                : 'An error occurred while creating the bill'
+            error:
+                error.name === 'ValidationError'
+                    ? Object.values(error.errors)
+                        .map(err => err.message)
+                        .join(', ')
+                    : 'An error occurred while creating the bill'
         });
     }
 };
+
 
 exports.getUpcomingBills = async (req, res) => {
     try {
@@ -92,32 +91,10 @@ exports.getUpcomingBills = async (req, res) => {
 
         const bills = await Bill.find(query)
             .sort({ nextDueDate: 1 })
-            .populate('autopay.accountId', 'name balance');
-
-        // Enhance bills with additional info
-        const enhancedBills = bills.map(bill => {
-            const daysUntilDue = dayjs(bill.nextDueDate).diff(today, 'day');
-            const isOverdue = daysUntilDue < 0;
-
-            return {
-                ...bill.toObject(),
-                daysUntilDue,
-                isOverdue,
-                statusColor: isOverdue ? 'red' : daysUntilDue <= 3 ? 'yellow' : 'green',
-                formattedDueDate: dayjs(bill.nextDueDate).format('MMM D, YYYY'),
-                isPending: bill.status === 'pending'
-            };
-        });
 
         res.status(200).json({
             success: true,
-            data: enhancedBills,
-            summary: {
-                total: enhancedBills.reduce((sum, bill) => sum + bill.amount, 0),
-                count: enhancedBills.length,
-                overdue: enhancedBills.filter(b => b.isOverdue).length,
-                autopayEnabled: enhancedBills.filter(b => b.autopay?.enabled).length
-            }
+            data: bills
         });
     } catch (error) {
         res.status(500).json({
@@ -126,11 +103,10 @@ exports.getUpcomingBills = async (req, res) => {
         });
     }
 };
-
 exports.updateBillStatus = async (req, res) => {
     try {
         const billId = req.params.id || req.params.billId;
-        const { status, transactionId } = req.body;
+        const { status } = req.body;
         const userId = req.user.id;
 
         const bill = await Bill.findOne({ _id: billId, userId });
@@ -141,46 +117,42 @@ exports.updateBillStatus = async (req, res) => {
             });
         }
 
-        // If marking as paid
+        // Only handle paid transition
         if (status === 'paid') {
-            // Update payment history
-            await notify({
-                userId,
-                type: 'bill_paid',
-                title: 'Bill paid',
-                body: `${bill.title} marked as paid`,
-                data: { billId: bill._id.toString() },
-                priority: 'low'
-            });
-            bill.paymentHistory.push({
-                date: new Date(),
-                amount: bill.amount,
-                status: 'paid',
-                transactionId
-            });
-            bill.lastPaidDate = new Date();
 
-            // If recurring, set next due date
-            if (bill.recurring) {
-                const nextDue = dayjs(bill.dueDate);
+            // Non-recurring or one-time bill → just mark paid
+            if (!bill.recurring || bill.frequency === 'one-time') {
+                bill.status = 'paid';
+            }
+            // Recurring bill → move nextDueDate forward
+            else {
+                const baseDate = bill.nextDueDate || bill.dueDate;
+
+                let nextDue;
                 switch (bill.frequency) {
                     case 'daily':
-                        bill.nextDueDate = nextDue.add(1, 'day');
+                        nextDue = dayjs(baseDate).add(1, 'day');
                         break;
                     case 'weekly':
-                        bill.nextDueDate = nextDue.add(1, 'week');
+                        nextDue = dayjs(baseDate).add(1, 'week');
                         break;
                     case 'monthly':
-                        bill.nextDueDate = nextDue.add(1, 'month');
+                        nextDue = dayjs(baseDate).add(1, 'month');
                         break;
                     case 'yearly':
-                        bill.nextDueDate = nextDue.add(1, 'year');
+                        nextDue = dayjs(baseDate).add(1, 'year');
                         break;
                 }
+
+                bill.nextDueDate = nextDue.toDate();
+                bill.status = 'pending'; // reset for next cycle
             }
         }
+        // Allow manual status update if needed
+        else {
+            bill.status = status;
+        }
 
-        bill.status = status;
         await bill.save();
 
         res.status(200).json({
@@ -194,6 +166,7 @@ exports.updateBillStatus = async (req, res) => {
         });
     }
 };
+
 
 exports.getBillSummary = async (req, res) => {
     try {
@@ -251,48 +224,6 @@ exports.getBillSummary = async (req, res) => {
             }
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
-    }
-};
-
-exports.toggleAutopay = async (req, res) => {
-    try {
-        // route uses :id in params; accept either 'id' or 'billId'
-        const billId = req.params.id || req.params.billId;
-        const { enabled, accountId } = req.body;
-        const userId = req.user.id;
-
-        // Build update object carefully to avoid casting empty string to ObjectId
-        const update = { 'autopay.enabled': !!enabled };
-        if (accountId && String(accountId).trim() !== '') {
-            update['autopay.accountId'] = accountId;
-        } else {
-            // explicitly unset the accountId when not provided/empty
-            update['$unset'] = { 'autopay.accountId': '' };
-        }
-
-        const bill = await Bill.findOneAndUpdate(
-            { _id: billId, userId },
-            update,
-            { new: true }
-        );
-
-        if (!bill) {
-            return res.status(404).json({
-                success: false,
-                error: 'Bill not found'
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            data: bill
-        });
-    } catch (error) {
-        console.error('Error toggling autopay:', error);
         res.status(500).json({
             success: false,
             error: error.message

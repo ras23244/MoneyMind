@@ -37,6 +37,7 @@ function Login() {
       });
 
       if (res.status === 200) {
+        console.log("Login successful:", res.data);
         toast.success('Login successful!');
         login(res.data.user);
         // Redirect based on bankAccounts

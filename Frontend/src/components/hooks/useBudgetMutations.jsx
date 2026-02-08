@@ -1,53 +1,61 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
+import axiosInstance from "../../lib/axiosInstance";
 
+/**
+ * CREATE budget
+ */
 export const useCreateBudget = (userId, month) => {
     const queryClient = useQueryClient();
-    const token = localStorage.getItem("token");
+
     return useMutation({
         mutationFn: async (budget) => {
-            const res = await axios.post(
-                `${import.meta.env.VITE_BASE_URL}budgets/create-budget`,
-                budget,
-                { headers: { Authorization: `Bearer ${token}` } }
+            const res = await axiosInstance.post(
+                "/budgets/create-budget",
+                budget
             );
             return res.data.data;
         },
+
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["budgets", userId] });
         },
     });
 };
 
+/**
+ * UPDATE budget
+ */
 export const useUpdateBudget = (userId, month) => {
     const queryClient = useQueryClient();
-    const token = localStorage.getItem("token");
+
     return useMutation({
         mutationFn: async ({ id, ...budget }) => {
-            const res = await axios.put(
-                `${import.meta.env.VITE_BASE_URL}budgets/update-budget/${id}`,
-                budget,
-                { headers: { Authorization: `Bearer ${token}` } }
+            const res = await axiosInstance.put(
+                `/budgets/update-budget/${id}`,
+                budget
             );
-            console.log("Update budget response:", res);
             return res.data.data;
         },
+
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["budgets", userId] });
         },
     });
 };
 
+/**
+ * DELETE budget
+ */
 export const useDeleteBudget = (userId, month) => {
     const queryClient = useQueryClient();
-    const token = localStorage.getItem("token");
+
     return useMutation({
         mutationFn: async (id) => {
-            await axios.delete(
-                `${import.meta.env.VITE_BASE_URL}budgets/delete-budget/${id}`,
-                { headers: { Authorization: `Bearer ${token}` } }
+            await axiosInstance.delete(
+                `/budgets/delete-budget/${id}`
             );
         },
+
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["budgets", userId] });
         },

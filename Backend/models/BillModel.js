@@ -18,10 +18,7 @@ const billSchema = new mongoose.Schema({
         type: Date,
         required: true
     },
-    category: {
-        type: String,
-        required: true
-    },
+  
     frequency: {
         type: String,
         enum: ['one-time', 'daily', 'weekly', 'monthly', 'yearly'],
@@ -29,44 +26,22 @@ const billSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'paid', 'overdue'],
+        enum: ['pending', 'paid'],
         default: 'pending'
-    },
-    autopay: {
-        enabled: {
-            type: Boolean,
-            default: false
-        },
-        accountId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Account'
-        }
     },
     reminderDays: {
         type: Number,
         default: 3 // Remind 3 days before due date
     },
-    notes: String,
     recurring: {
         type: Boolean,
         default: true
     },
-    lastPaidDate: Date,
     nextDueDate: Date,
-    paymentHistory: [{
-        date: Date,
-        amount: Number,
-        status: String,
-        transactionId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Transaction'
-        }
-    }]
 }, {
     timestamps: true
 });
 
-// Add index for efficient queries
 billSchema.index({ userId: 1, dueDate: 1 });
 billSchema.index({ userId: 1, status: 1 });
 

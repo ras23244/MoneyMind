@@ -1,27 +1,25 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
+import axiosInstance from "../../lib/axiosInstance";
 
 export const useBulkAddTransactions = (userId) => {
     const queryClient = useQueryClient();
-    const token = localStorage.getItem("token");
 
     return useMutation({
         mutationFn: async (transactions) => {
-            const res = await axios.post(
-                `${import.meta.env.VITE_BASE_URL}transactions/bulk-create-transactions`,
-                { transactions },
-                { headers: { Authorization: `Bearer ${token}` } }
+            const res = await axiosInstance.post(
+                "/transactions/bulk-create-transactions",
+                { transactions }
             );
             return res.data;
         },
-        onSuccess: (data) => {
+
+        onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["transactions", userId] });
             queryClient.invalidateQueries({ queryKey: ["transactionTrends", userId] });
             queryClient.invalidateQueries({ queryKey: ["budgets", userId] });
-            queryClient.invalidateQueries(["financialSummary", userId]);
-            queryClient.refetchQueries({ queryKey: ["transactions", userId], type: "active" });
-            queryClient.refetchQueries({ queryKey: ["transactionTrends", userId], type: "active" });
+            queryClient.invalidateQueries({ queryKey: ["financialSummary", userId] });
         },
+
         onError: (err) => {
             console.error("[useBulkAddTransactions] ❌ Mutation error:", err);
         },

@@ -4,11 +4,9 @@ const User = require("../models/UserModel");
 const protect = async (req, res, next) => {
     let token;
 
-    // Check for token in HTTP-only cookie first (secure)
     if (req.cookies && req.cookies.accessToken) {
         token = req.cookies.accessToken;
     }
-    // Fallback to Authorization header for socket.io and other cases
     else if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
         token = req.headers.authorization.split(" ")[1];
     }
@@ -25,7 +23,6 @@ const protect = async (req, res, next) => {
         }
         next();
     } catch (err) {
-        // If access token expired, return 401 to trigger refresh
         if (err.name === 'TokenExpiredError') {
             return res.status(401).json({ message: "Token expired", code: "TOKEN_EXPIRED" });
         }

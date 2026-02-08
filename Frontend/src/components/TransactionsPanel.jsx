@@ -1,30 +1,21 @@
 // src/components/TransactionsPanel.jsx
 import React, { useState, useMemo } from "react";
-import * as XLSX from "xlsx";
 import ExportDialog from "./dialogs/ExportDialog";
-// trends are now fetched inside TransactionTrendsChart
 import { useTransactions } from "./hooks/useTransactions";
 import { useUser } from "../context/UserContext";
 import AddTransactionDialog from "./AddTransactionDialog";
-import { useEditTransaction } from "./hooks/useEditTransaction";
-import { useDeleteTransaction } from "./hooks/useDeleteTransaction";
 import ImportCSVDialog from "./dialogs/ImportCSVDialog";
 import { Button } from "@/components/ui/button";
 import TransactionDetailsPanel from "./TransactionDetailsPanel";
 import TransactionTrendsChart from "./TransactionTrendsChart";
 import TransactionCalendar from "./TransactionCalendar";
-import TransactionBreakdownChart from "./TransactionBreakdownChart";
 import TransactionsList from "./TransactionList";
-import { useTransactionBreakdown } from "./hooks/useTransactionBreakdown";
+import ImageImportDialog from "./dialogs/ImageImportDialog";
 
-
-const isSameDay = (d1, d2) => {
-    return (
-        d1.getFullYear() === d2.getFullYear() &&
-        d1.getMonth() === d2.getMonth() &&
-        d1.getDate() === d2.getDate()
-    );
-};
+const isSameDay = (d1, d2) =>
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate();
 
 export default function TransactionsPanel({ selectedDate, setSelectedDate, formatCurrency }) {
     const [search, setSearch] = useState("");
@@ -33,32 +24,13 @@ export default function TransactionsPanel({ selectedDate, setSelectedDate, forma
     const [openImportDialog, setOpenImportDialog] = useState(false);
     const [openExportDialog, setOpenExportDialog] = useState(false);
     const [limit, setLimit] = useState(3);
-    const [selectedTag, setSelectedTag] = useState(null);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
+    const [openImageImportDialog, setOpenImageImportDialog] = useState(false);
 
     const { user } = useUser();
     const userId = user?._id;
 
-    const { data: allTransactions = [], isLoading: txLoading, error: txError } = useTransactions(userId);
-
-    const editTransactionMutation = useEditTransaction(userId);
-    const deleteTransactionMutation = useDeleteTransaction(userId);
-
-
-    const handleExport = () => {
-        setOpenExportDialog(true);
-    };
-
-
-    const handleEdit = (transaction) => {
-        setEditing(transaction);
-        setOpenDialog(true);
-    };
-
-    const handleDelete = (_id) => {
-        deleteTransactionMutation.mutate(_id);
-    };
-
+    const { data: allTransactions = [], isLoading, error } = useTransactions(userId);
 
     const filteredTransactions = useMemo(() => {
         const dateToShow = selectedDate || new Date();
@@ -78,58 +50,64 @@ export default function TransactionsPanel({ selectedDate, setSelectedDate, forma
         });
     }, [search, allTransactions, selectedDate]);
 
-
-    const { mainChartData, drilldownChartData } = useTransactionBreakdown(allTransactions, selectedTag);
-
-
-    if (txLoading) {
-        return <p className="text-white">Loading financial data...</p>;
-    }
-
-    if (txError) {
-        return <p className="text-red-500">Error loading transactions: {txError?.message}</p>;
-    }
+    if (isLoading) return <p className="text-white">Loading financial data...</p>;
+    if (error) return <p className="text-red-500">Error loading transactions</p>;
 
     return (
         <>
             <div className="flex items-center justify-between mb-4">
                 <p className="text-2xl font-bold text-white">Transactions</p>
                 <div className="flex gap-2">
-                    <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => setOpenImportDialog(true)}>
+                    <Button
+                        className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                        onClick={() => setOpenImageImportDialog(true)}
+                    >
+                        Add Receipt
+                    </Button>
+                    <Button
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        onClick={() => setOpenImportDialog(true)}
+                    >
                         Import CSV
                     </Button>
-                    <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handleExport()}>
+                    <Button
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                        onClick={() => setOpenExportDialog(true)}
+                    >
                         Export
                     </Button>
                 </div>
             </div>
-            {/* Trends + Calendar */}
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <TransactionTrendsChart userId={userId} />
-                <TransactionCalendar selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
+                <TransactionCalendar
+                    selectedDate={selectedDate}
+                    setSelectedDate={setSelectedDate}
+                />
             </div>
 
             <hr className="my-6 border-t-2 border-gray-700" />
 
-            {/* Transaction List */}
             <TransactionsList
-                selectedDate={selectedDate}
+                userId={userId}
+                transactions={filteredTransactions}
                 search={search}
                 setSearch={setSearch}
-                transactions={filteredTransactions}
                 limit={limit}
                 setLimit={setLimit}
+                selectedDate={selectedDate}
                 setSelectedTransaction={setSelectedTransaction}
+                setEditing={setEditing}
+                setOpenDialog={setOpenDialog}
                 formatCurrency={formatCurrency}
-                handleExport={handleExport}
-                handleDelete={handleDelete}
-                handleEdit={handleEdit}
             />
 
-            {/* Transaction Detail Popup */}
-            <TransactionDetailsPanel transaction={selectedTransaction} onClose={() => setSelectedTransaction(null)} />
+            <TransactionDetailsPanel
+                transaction={selectedTransaction}
+                onClose={() => setSelectedTransaction(null)}
+            />
 
-            {/* Add/Edit Dialog */}
             <AddTransactionDialog
                 open={openDialog}
                 setOpen={setOpenDialog}
@@ -140,6 +118,8 @@ export default function TransactionsPanel({ selectedDate, setSelectedDate, forma
                     setOpenDialog(false);
                 }}
             />
+
+            <ImageImportDialog open={openImageImportDialog} setOpen={setOpenImageImportDialog} />
             <ImportCSVDialog open={openImportDialog} setOpen={setOpenImportDialog} />
             <ExportDialog open={openExportDialog} setOpen={setOpenExportDialog} />
         </>

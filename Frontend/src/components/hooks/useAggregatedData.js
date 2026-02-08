@@ -1,92 +1,110 @@
-import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
+import { useQuery } from "@tanstack/react-query";
+import axiosInstance from "../../lib/axiosInstance";
 
-const BASE_URL = import.meta.env.VITE_BASE_URL;
-
+/**
+ * Financial summary
+ */
 export const useFinancialSummary = (userId) => {
-    const token = localStorage.getItem("token");
     return useQuery({
-        queryKey: ['financialSummary', userId],
-        queryFn: async () => {
-            const response = await axios.get(`${BASE_URL}transactions/financial-summary`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            return response.data.data;
-        },
-        enabled: !!userId && !!token,
-        staleTime: 5 * 60 * 1000,
-        gcTime: 30 * 60 * 1000, // Consider data fresh for 5 minutes
-    });
-};
+        queryKey: ["financialSummary", userId],
+        enabled: !!userId,
 
-export const useCategoryBreakdown = (userId, period = 'month') => {
-    const token = localStorage.getItem("token");
-    return useQuery({
-        queryKey: ['categoryBreakdown', userId, period],
         queryFn: async () => {
-            const response = await axios.get(`${BASE_URL}transactions/category-breakdown`, {
-                params: { period },
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            return response.data.data;
+            const res = await axiosInstance.get(
+                "/transactions/financial-summary"
+            );
+            return res.data.data;
         },
-        enabled: !!userId && !!token,
+
         staleTime: 5 * 60 * 1000,
         gcTime: 30 * 60 * 1000,
     });
 };
 
+/**
+ * Category breakdown
+ */
+export const useCategoryBreakdown = (userId, period = "month") => {
+    return useQuery({
+        queryKey: ["categoryBreakdown", userId, period],
+        enabled: !!userId,
+
+        queryFn: async () => {
+            const res = await axiosInstance.get(
+                "/transactions/category-breakdown",
+                { params: { period } }
+            );
+            return res.data.data;
+        },
+
+        staleTime: 5 * 60 * 1000,
+        gcTime: 30 * 60 * 1000,
+    });
+};
+
+/**
+ * Spending heatmap
+ */
 export const useSpendingHeatmap = (userId) => {
-    const token = localStorage.getItem("token");
     return useQuery({
-        queryKey: ['spendingHeatmap', userId],
+        queryKey: ["spendingHeatmap", userId],
+        enabled: !!userId,
+
         queryFn: async () => {
-            const response = await axios.get(`${BASE_URL}transactions/spending-heatmap`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            return response.data.data;
+            const res = await axiosInstance.get(
+                "/transactions/spending-heatmap"
+            );
+            return res.data.data;
         },
-        enabled: !!userId && !!token,
+
         staleTime: 5 * 60 * 1000,
         gcTime: 30 * 60 * 1000,
     });
 };
 
+/**
+ * Trend data
+ */
 export const useTrendData = (userId) => {
-    const token = localStorage.getItem("token");
     return useQuery({
-        queryKey: ['trendData', userId],
+        queryKey: ["trendData", userId],
+        enabled: !!userId,
+
         queryFn: async () => {
-            const response = await axios.get(`${BASE_URL}transactions/trend-data`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            return response.data.data;
+            const res = await axiosInstance.get(
+                "/transactions/trend-data"
+            );
+            return res.data.data;
         },
-        enabled: !!userId && !!token,
+
         staleTime: 5 * 60 * 1000,
         gcTime: 30 * 60 * 1000,
     });
 };
 
-export const useCategoryAggregation = (userId, { range = '1M', start, end } = {}) => {
-    const token = localStorage.getItem('token');
+/**
+ * Category aggregation
+ */
+export const useCategoryAggregation = (
+    userId,
+    { range = "1M", start, end } = {}
+) => {
     return useQuery({
-        queryKey: ['categoryAggregation', userId, range, start, end],
+        queryKey: ["categoryAggregation", userId, range, start, end],
+        enabled: !!userId,
+
         queryFn: async () => {
-            const params = {};
-            if (start && end) {
-                params.start = start;
-                params.end = end;
-            } else {
-                params.range = range;
-            }
-            const response = await axios.get(`${BASE_URL}transactions/category-aggregation`, {
-                params,
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            return response.data.data;
+            const params = start && end
+                ? { start, end }
+                : { range };
+
+            const res = await axiosInstance.get(
+                "/transactions/category-aggregation",
+                { params }
+            );
+            return res.data.data;
         },
-        enabled: !!userId && !!token,
+
         staleTime: 5 * 60 * 1000,
         gcTime: 30 * 60 * 1000,
     });

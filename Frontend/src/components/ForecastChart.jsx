@@ -1,50 +1,69 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Line } from 'recharts';
+import axiosInstance from '../lib/axiosInstance';
 
 export default function ForecastChart({ months = 3, lookback = 6 }) {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+  
     useEffect(() => {
         let cancelled = false;
-        const token = localStorage.getItem('token');
+
         const load = async () => {
             setLoading(true);
             try {
-                const url = `${import.meta.env.VITE_BASE_URL}transactions/forecast`;
-                const res = await axios.get(url, { params: { months, lookback }, headers: { Authorization: `Bearer ${token}` } });
+                const res = await axiosInstance.get("/transactions/forecast", {
+                    params: { months, lookback },
+                });
+
                 if (cancelled) return;
-                const history = (res.data?.data?.history || []).map(h => ({ month: h.month, net: Math.round(h.net || 0) }));
-                const forecast = (res.data?.data?.forecast || []).map(f => ({ month: f.month, forecast: Math.round(f.projectedNet || 0) }));
 
-                // Combine history and forecast into timeline array
+                const history = (res.data?.data?.history || []).map((h) => ({
+                    month: h.month,
+                    net: Math.round(h.net || 0),
+                }));
+
+                const forecast = (res.data?.data?.forecast || []).map((f) => ({
+                    month: f.month,
+                    forecast: Math.round(f.projectedNet || 0),
+                }));
+
+                // Combine history + forecast into timeline
                 const combined = [];
-                history.forEach(h => combined.push({ month: h.month, net: h.net }));
-                forecast.forEach(f => combined.push({ month: f.month, forecast: f.forecast }));
+                history.forEach((h) => combined.push({ month: h.month, net: h.net }));
+                forecast.forEach((f) => combined.push({ month: f.month, forecast: f.forecast }));
 
-                // Convert month labels to short names for display
+                // Convert month to short label for UI
                 const display = combined.map((row) => {
                     let label = row.month;
                     try {
-                        label = new Date(row.month + '-01').toLocaleString(undefined, { month: 'short' });
+                        label = new Date(row.month + "-01").toLocaleString(undefined, {
+                            month: "short",
+                        });
                     } catch (e) { }
+
                     return { ...row, monthLabel: label };
                 });
 
                 setData(display);
             } catch (err) {
-                console.error('Forecast fetch error', err);
+                console.error("Forecast fetch error", err);
                 setError(err);
             } finally {
                 if (!cancelled) setLoading(false);
             }
         };
+
         load();
-        return () => { cancelled = true; };
+
+        return () => {
+            cancelled = true;
+        };
     }, [months, lookback]);
+
 
     return (
         <Card className="bg-[#1f1d1f] border border-white/10 p-4">

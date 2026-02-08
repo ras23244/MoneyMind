@@ -6,14 +6,13 @@ const bcrypt = require('bcrypt');
 const Account = require('../models/AccountModel');
 const jwt = require('jsonwebtoken');
 
-// Helper to set secure HTTP-only cookies
 const setAuthCookies = (res, tokens) => {
     const isProduction = process.env.NODE_ENV === 'production';
 
     res.cookie('accessToken', tokens.accessToken, {
         httpOnly: true,
         secure: isProduction, // Only HTTPS in production
-        sameSite: 'strict', // CSRF protection
+        sameSite: 'lax', // CSRF protection
         maxAge: 15 * 60 * 1000, // 15 minutes
         path: '/',
     });
@@ -21,7 +20,7 @@ const setAuthCookies = (res, tokens) => {
     res.cookie('refreshToken', tokens.refreshToken, {
         httpOnly: true,
         secure: isProduction,
-        sameSite: 'strict',
+        sameSite: 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         path: '/',
     });
@@ -93,7 +92,6 @@ exports.login = async (req, res) => {
 };
 
 exports.logout = (req, res) => {
-    // Clear HTTP-only cookies
     res.clearCookie('accessToken', { path: '/', httpOnly: true, secure: process.env.NODE_ENV === 'production' });
     res.clearCookie('refreshToken', { path: '/', httpOnly: true, secure: process.env.NODE_ENV === 'production' });
     res.status(200).json({ message: 'Logged out successfully' });
@@ -124,6 +122,7 @@ exports.refreshAccessToken = async (req, res) => {
         return res.status(401).json({ message: 'Invalid refresh token' });
     }
 };
+
 
 exports.getMe = async (req, res) => {
 

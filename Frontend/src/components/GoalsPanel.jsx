@@ -181,7 +181,7 @@ export default function GoalsPanel({ formatCurrency }) {
                         const barColor = percent >= 90 ? "bg-green-600" :
                             percent >= 80 ? "bg-blue-400" :
                                 percent >= 50 ? "bg-yellow-400" :
-                                    "bg-orange-400"; // A new color for early progress
+                                    "bg-orange-400"; 
 
                         return (
                             <Card key={goal._id || idx} className="bg-[#1f1d1f] border border-white/10 shadow-lg rounded-2xl hover:bg-white/10 relative">

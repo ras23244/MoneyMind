@@ -1,27 +1,26 @@
 import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
+import axiosInstance from "../../lib/axiosInstance";
 
-export const useBudgets = (userId, filters) => {
-    const token = localStorage.getItem("token");
-
-    // Construct query parameters from the filters object (only include non-empty values)
-    const params = new URLSearchParams();
-    if (filters) {
-        Object.entries(filters).forEach(([k, v]) => {
-            if (v !== undefined && v !== null && v !== "") params.append(k, v);
-        });
-    }
-    const queryParams = params.toString();
+export const useBudgets = (userId, filters = {}) => {
+    // Remove empty values so queryKey & request stay clean
+    const cleanFilters = Object.fromEntries(
+        Object.entries(filters).filter(
+            ([_, v]) => v !== undefined && v !== null && v !== ""
+        )
+    );
 
     return useQuery({
-        // Add serialized params to the queryKey to refetch when they change
-        queryKey: ["budgets", userId, queryParams],
+        queryKey: ["budgets", userId, cleanFilters],
         enabled: !!userId,
+
         queryFn: async () => {
-            const url = `${import.meta.env.VITE_BASE_URL}budgets/get-budgets${queryParams ? `?${queryParams}` : ""}`;
-            const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
+            const res = await axiosInstance.get(
+                "/budgets/get-budgets",
+                { params: cleanFilters } // 👈 axios handles query string
+            );
             return res.data.data || [];
         },
+
         staleTime: 10 * 60 * 1000,
         refetchOnWindowFocus: false,
         refetchOnMount: false,

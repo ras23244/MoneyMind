@@ -14,13 +14,10 @@ import useGeneral from "../components/hooks/useGeneral";
 import Budgets from "../components/Budgets";
 import Analytics from "../components/Analytics";
 import Accounts from "../components/Accounts";
-import CashFlowChart from "../components/CashFlowChart";
 import { useBudgets } from "../components/hooks/useBudgets";
 import { useTransactions } from "../components/hooks/useTransactions";
 import { BudgetProgressCircle } from "../components/Analytics";
 import NotesPanel from "../components/NotesPanel";
-import budgetImages from "../data/budgetImages";
-import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards";
 import { useFinancialSummary } from "../components/hooks/useFinancialSummary";
 import { transactionTrendData, financialGoals, connectedBanks } from "@/data/financeData";
 import Dashboard from "../components/Dashboard";
@@ -65,16 +62,7 @@ export default function FinanceDashboard() {
         [budgets, today]
     );
 
-    const budgetStatusCategories = useMemo(() =>
-        monthlyBudgets.map(budget => ({
-            name: budget.category,
-            percentage: budget.amount > 0 ? Math.round((budget.spent / budget.amount) * 100) : 0,
-            spent: budget.spent,
-            budget: budget.amount,
-            image: budgetImages[budget.category] || budgetImages["default"],
-        })),
-        [monthlyBudgets]
-    );
+   
 
     const recentTx = useMemo(() => transactions.slice(0, 3), [transactions]);
 

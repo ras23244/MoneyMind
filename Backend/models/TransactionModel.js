@@ -20,7 +20,6 @@ const transactionSchema = new mongoose.Schema({
         type: String,
         trim: true,
     },
-
     amount: {
         type: Number,
         required: [true, 'Please add a positive or negative number'],
@@ -52,7 +51,6 @@ const transactionSchema = new mongoose.Schema({
     },
 });
 
-// Indexes to speed up aggregation and filter queries
 transactionSchema.index({ userId: 1, type: 1, category: 1, date: 1 });
 transactionSchema.index({ userId: 1, date: 1 });
 

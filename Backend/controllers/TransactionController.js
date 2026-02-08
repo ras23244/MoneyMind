@@ -3,6 +3,9 @@ const Account = require('../models/AccountModel');
 const mongoose = require('mongoose');
 const dayjs = require('dayjs');
 const notify = require('../utils/notify');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 exports.createTransaction = async (req, res) => {
     try {
@@ -304,7 +307,6 @@ exports.filterTransactions = async (req, res) => {
     }
 };
 
-// Export filtered transactions as CSV
 exports.exportTransactions = async (req, res) => {
     try {
         const { startDate, endDate, category, tags, type, minAmount, maxAmount, search } = req.query;
@@ -482,8 +484,6 @@ exports.getTransactionTrends = async (req, res) => {
         res.status(500).json({ message: 'Error fetching trends' });
     }
 };
-
-
 
 exports.getCategoryBreakdown = async (req, res) => {
     try {
@@ -848,6 +848,7 @@ exports.bulkCreateTransactions = async (req, res) => {
             } else {
                 date = new Date();
             }
+            console.log("bank account",t.bankAccountId|| t.accountId)
 
             return {
                 userId: req.user.id,
@@ -883,3 +884,59 @@ exports.bulkCreateTransactions = async (req, res) => {
         return res.status(500).json({ success: false, error: error.message });
     }
 }
+
+exports.structureReceipt = async (req, res) => {
+    try {
+        const { text } = req.body;
+
+        // UPDATED: Use gemini-2.5-flash and explicit v1beta
+        const model = genAI.getGenerativeModel(
+            { model: "gemini-2.5-flash" },
+            { apiVersion: "v1beta" }
+        );
+
+        const generationConfig = {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: "object",
+                properties: {
+                    transactions: {
+                        type: "array",
+                        items: {
+                            type: "object",
+                            properties: {
+                                description: { type: "string" },
+                                amount: { type: "number" },
+                                merchant: { type: "string" },
+                                type: { type: "string", enum: ["expense", "income"] },
+                                category: { type: "string" },
+                                date: { type: "string" },
+                                note: { type: "string" }
+                            },
+                            required: ["description", "amount", "type", "category"]
+                        }
+                    }
+                }
+            }
+        };
+
+        const prompt = `Convert this messy receipt text into structured transactions. 
+        Categorize items logically (e.g., electronics, food, tools). 
+        Text: ${text}`;
+
+        // Pass the config during content generation
+        const result = await model.generateContent({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig
+        });
+
+        const responseText = result.response.text();
+        const parsedData = JSON.parse(responseText);
+        console.log("Gemini response:", parsedData);
+
+        res.status(200).json(parsedData.transactions);
+    } catch (error) {
+        console.error("Gemini Error:", error);
+        res.status(500).json({ error: "AI Parsing failed", details: error.message });
+    }
+};

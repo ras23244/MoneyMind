@@ -135,7 +135,9 @@ export const UserProvider = ({ children }) => {
     };
 
     const login = (userData) => {
+        console.log("Logging in user:", userData);
         setUser(userData);
+        console.log(user)
     };
 
     const patchUser = (partialData) => {

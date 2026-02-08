@@ -77,4 +77,6 @@ router.get("/spending-heatmap", protect, generalLimiter, TransactionController.g
 router.get("/trend-data", protect, generalLimiter, TransactionController.getTrendData);
 router.get('/get-account-transactions/:accountId', protect, generalLimiter, TransactionController.getAccountTransactions);
 
+router.post('/structure-receipt', protect, generalLimiter, TransactionController.structureReceipt);
+
 module.exports = router;

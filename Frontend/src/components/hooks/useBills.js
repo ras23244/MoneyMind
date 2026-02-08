@@ -1,112 +1,101 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
-
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import axiosInstance from "../../lib/axiosInstance";
 
 export const useBills = (userId, options = {}) => {
-    const token = localStorage.getItem("token");
     const { days = 30, status } = options;
 
     return useQuery({
-        queryKey: ['bills', userId, days, status],
+        queryKey: ["bills", userId, days, status],
+        enabled: !!userId,
         queryFn: async () => {
-            const response = await axios.get(`${BASE_URL}bills/get-bills`, {
+            const res = await axiosInstance.get("/bills/get-bills", {
                 params: { days, status },
-                headers: { Authorization: `Bearer ${token}` }
             });
-            return response.data.data;
+            return res.data.data;
         },
-        enabled: !!userId && !!token,
         gcTime: 30 * 60 * 1000,
-        staleTime: 5 * 60 * 1000, // 5 minutes
-    });
-};
-
-export const useBillSummary = (userId) => {
-    const token = localStorage.getItem("token");
-
-    return useQuery({
-        queryKey: ['billSummary', userId],
-        queryFn: async () => {
-            const response = await axios.get(`${BASE_URL}bills/summary`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            return response.data.data;
-        },
-        enabled: !!userId && !!token,
         staleTime: 5 * 60 * 1000,
     });
 };
 
-export const useCreateBill = () => {
-    const queryClient = useQueryClient();
-    const token = localStorage.getItem("token");
 
-    return useMutation({
-        mutationFn: async (billData) => {
-            const response = await axios.post(`${BASE_URL}bills/create-bill`, billData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            return response.data.data;
+export const useBillSummary = (userId) => {
+    return useQuery({
+        queryKey: ["billSummary", userId],
+        enabled: !!userId,
+        queryFn: async () => {
+            const res = await axiosInstance.get("/bills/summary");
+            return res.data.data;
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries(['bills']);
-            queryClient.invalidateQueries(['billSummary']);
-        }
+        staleTime: 5 * 60 * 1000,
     });
 };
 
+
+export const useCreateBill = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (billData) => {
+            const res = await axiosInstance.post("/bills/create-bill", billData);
+            return res.data.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["bills"] });
+            queryClient.invalidateQueries({ queryKey: ["billSummary"] });
+        },
+    });
+};
+
+
 export const useUpdateBillStatus = () => {
     const queryClient = useQueryClient();
-    const token = localStorage.getItem("token");
 
     return useMutation({
         mutationFn: async ({ billId, status, transactionId }) => {
-            const response = await axios.patch(`${BASE_URL}bills/update-bill/${billId}/status`,
-                { status, transactionId },
-                { headers: { Authorization: `Bearer ${token}` } }
+            const res = await axiosInstance.patch(
+                `/bills/update-bill/${billId}/status`,
+                { status, transactionId }
             );
-            return response.data.data;
+            return res.data.data;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(['bills']);
-            queryClient.invalidateQueries(['billSummary']);
-        }
+            queryClient.invalidateQueries({ queryKey: ["bills"] });
+            queryClient.invalidateQueries({ queryKey: ["billSummary"] });
+        },
     });
 };
 
 export const useToggleAutopay = () => {
     const queryClient = useQueryClient();
-    const token = localStorage.getItem("token");
 
     return useMutation({
         mutationFn: async ({ billId, enabled, accountId }) => {
-            const response = await axios.patch(`${BASE_URL}bills/update-bill/${billId}/autopay`,
-                { enabled, accountId },
-                { headers: { Authorization: `Bearer ${token}` } }
+            const res = await axiosInstance.patch(
+                `/bills/update-bill/${billId}/autopay`,
+                { enabled, accountId }
             );
-            return response.data.data;
+            return res.data.data;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(['bills']);
-        }
+            queryClient.invalidateQueries({ queryKey: ["bills"] });
+        },
     });
 };
 
 export const useDeleteBill = () => {
     const queryClient = useQueryClient();
-    const token = localStorage.getItem("token");
 
     return useMutation({
         mutationFn: async (billId) => {
-            const response = await axios.delete(`${BASE_URL}bills/delete-bill/${billId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            return response.data.data;
+            const res = await axiosInstance.delete(
+                `/bills/delete-bill/${billId}`
+            );
+            return res.data.data;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(['bills']);
-            queryClient.invalidateQueries(['billSummary']);
-        }
+            queryClient.invalidateQueries({ queryKey: ["bills"] });
+            queryClient.invalidateQueries({ queryKey: ["billSummary"] });
+        },
     });
 };
