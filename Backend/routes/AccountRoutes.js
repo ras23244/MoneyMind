@@ -7,12 +7,6 @@ const { body } = require('express-validator');
 
 
 router.post('/link-bank-account', protect, generalLimiter, [
-    body('email')
-        .notEmpty()
-        .withMessage('Email is required')
-        .isEmail()
-        .withMessage('Invalid email address')
-        .normalizeEmail(),
 
     body('bankName')
         .notEmpty()

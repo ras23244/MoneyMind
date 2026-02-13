@@ -5,35 +5,29 @@ import { useCreateAccount } from '../hooks/useAccounts';
 
 export default function AddAccountDialog({ open, setOpen, userId }) {
     const createAccount = useCreateAccount(userId);
+
     const [formData, setFormData] = useState({
-        accountName: '',
-        accountNumber: '',
         bankName: '',
-        accountType: 'checking',
-        balance: 0,
-    
+        accountNumber: '',
     });
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
-            [name]: name === 'balance' ? parseFloat(value) || 0 : value
+            [name]: value
         }));
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
+
         createAccount.mutate(formData, {
             onSuccess: () => {
                 setOpen(false);
                 setFormData({
-                    accountName: '',
-                    accountNumber: '',
                     bankName: '',
-                    accountType: 'checking',
-                    balance: 0,
-                    
+                    accountNumber: '',
                 });
             }
         });
@@ -43,24 +37,15 @@ export default function AddAccountDialog({ open, setOpen, userId }) {
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent className="sm:max-w-[425px] bg-slate-900 text-white border-slate-700">
                 <DialogHeader>
-                    <DialogTitle>Add New Account</DialogTitle>
+                    <DialogTitle>Link Bank Account</DialogTitle>
                 </DialogHeader>
+
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Account Name</label>
-                        <input
-                            type="text"
-                            name="accountName"
-                            value={formData.accountName}
-                            onChange={handleChange}
-                            required
-                            className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg focus:outline-none focus:border-blue-500"
-                            placeholder="e.g., My Checking Account"
-                        />
-                    </div>
 
                     <div>
-                        <label className="block text-sm font-medium mb-1">Bank Name</label>
+                        <label className="block text-sm font-medium mb-1">
+                            Bank Name
+                        </label>
                         <input
                             type="text"
                             name="bankName"
@@ -73,7 +58,9 @@ export default function AddAccountDialog({ open, setOpen, userId }) {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium mb-1">Account Number</label>
+                        <label className="block text-sm font-medium mb-1">
+                            Account Number
+                        </label>
                         <input
                             type="text"
                             name="accountNumber"
@@ -82,35 +69,6 @@ export default function AddAccountDialog({ open, setOpen, userId }) {
                             required
                             className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg focus:outline-none focus:border-blue-500"
                             placeholder="XXXXXXXXXX"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Account Type</label>
-                        <select
-                            name="accountType"
-                            value={formData.accountType}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg focus:outline-none focus:border-blue-500"
-                        >
-                            <option value="checking">Checking</option>
-                            <option value="savings">Savings</option>
-                            <option value="credit">Credit</option>
-                            <option value="wallet">Wallet</option>
-                            <option value="investment">Investment</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Current Balance</label>
-                        <input
-                            type="number"
-                            name="balance"
-                            value={formData.balance}
-                            onChange={handleChange}
-                            step="0.01"
-                            className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg focus:outline-none focus:border-blue-500"
-                            placeholder="₹0"
                         />
                     </div>
 
@@ -123,14 +81,16 @@ export default function AddAccountDialog({ open, setOpen, userId }) {
                         >
                             Cancel
                         </Button>
+
                         <Button
                             type="submit"
                             className="bg-blue-600 hover:bg-blue-700"
                             disabled={createAccount.isPending}
                         >
-                            {createAccount.isPending ? 'Adding...' : 'Add Account'}
+                            {createAccount.isPending ? 'Linking...' : 'Link Account'}
                         </Button>
                     </div>
+
                 </form>
             </DialogContent>
         </Dialog>

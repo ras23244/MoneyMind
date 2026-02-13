@@ -4,32 +4,36 @@ const TransactionModel = require('../models/TransactionModel');
 const notify = require('../utils/notify');
 
 exports.linkBankAccount = async (req, res) => {
-    const { email, bankName, accountNumber } = req.body;
-
-    if (!email || !bankName || !accountNumber) {
-        return res.status(400).json({ message: 'All fields are required' });
+    const { bankName, accountNumber } = req.body;
+    console.log('Received link bank account request:', { bankName, accountNumber, user: req.user?.email });
+    if (!req.user || !bankName || !accountNumber) {
+        return res.status(400).json({ message: 'Bank name and account number are required' });
     }
 
     try {
-        const user = await UserModel.findOne({ email });
+        const user = await UserModel.findOne({ email: req.user.email });
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
+
         const existingAccount = await AccountModel.findOne({
             userId: user._id,
-            bankName,
             accountNumber,
         });
 
         if (existingAccount) {
-            return res.status(400).json({ message: 'This bank account is already linked' });
+            return res.status(400).json({ message: 'This account is already linked' });
         }
+
         const newAccount = new AccountModel({
             userId: user._id,
             bankName,
             accountNumber,
+            accountName: `${bankName} Account`,
+            accountType: 'checking',
+            balance: 0,
         });
-
+        console.log('Saving new account:', newAccount);
         await newAccount.save();
 
         const updatedUser = await UserModel.findByIdAndUpdate(
@@ -38,12 +42,6 @@ exports.linkBankAccount = async (req, res) => {
             { new: true }
         ).populate('bankAccounts');
 
-        console.log('Updated User after linking account:', updatedUser);
-
-        res.status(201).json({
-            message: 'Bank account linked successfully',
-            user: updatedUser,
-        });
         await notify({
             userId: user._id.toString(),
             type: 'account_linked',
@@ -52,11 +50,18 @@ exports.linkBankAccount = async (req, res) => {
             data: { accountId: newAccount._id.toString() },
             priority: 'medium'
         });
+
+        res.status(201).json({
+            message: 'Bank account linked successfully',
+            user: updatedUser,
+        });
+
     } catch (error) {
         console.error('Error linking bank account:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 };
+
 
 exports.unlinkAccount = async (req, res) => {
     const { email, bankName, accountNumber, password } = req.body;

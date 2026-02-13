@@ -16,7 +16,7 @@ export const useBudgets = (userId, filters = {}) => {
         queryFn: async () => {
             const res = await axiosInstance.get(
                 "/budgets/get-budgets",
-                { params: cleanFilters } // 👈 axios handles query string
+                { params: cleanFilters } 
             );
             return res.data.data || [];
         },

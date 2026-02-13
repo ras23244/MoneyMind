@@ -28,7 +28,7 @@ export default function FinanceDashboard() {
     const { user, loading } = useUser();
     const { navigate } = useGeneral();
 
-    // Redirect to link-bank-account if user has no accounts
+    // // Redirect to link-bank-account if user has no accounts
     React.useEffect(() => {
         if (!loading && user && (!Array.isArray(user.bankAccounts) || user.bankAccounts.length === 0)) {
             navigate('/link-bank-account');
@@ -83,10 +83,9 @@ export default function FinanceDashboard() {
 
     // Handle new transaction creation
     const handleTransactionCreated = () => {
-        refetchTransactions(); // This will automatically re-fetch the data, updating the `transactions` array
+        refetchTransactions(); 
     };
 
-    // --- Render logic for loading and unauthenticated states ---
     if (loading) {
         return <div>Loading...</div>;
     }

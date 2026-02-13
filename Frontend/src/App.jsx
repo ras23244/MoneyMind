@@ -7,17 +7,18 @@ import VerifyOtp from "./components/VerifyOtp";
 import UpdatePassword from "./components/UpdatePassword";
 import FinanceDashboard from "./pages/FinanceDashboard";
 import { UserProvider } from './context/UserContext';
-import LinkBankAccount from "./pages/LinkBankAccount";
+import LandingPage from "./pages/LandingPage";
+import LinkBankAccountPage from "./pages/LinkBankAccountPage";
 
 function App() {
   
   return (
     <UserProvider>
       <Routes>
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/link-bank-account" element={<LinkBankAccount />} />
         <Route path="/signup" element={<Signup />} />
+          <Route path="/link-bank-account" element={<LinkBankAccountPage />} />
         <Route path="/forget-password" element={<ForgetPassword />} />
         <Route path="/verify-otp" element={<VerifyOtp />} />
         <Route path="/update-password" element={<UpdatePassword />} />

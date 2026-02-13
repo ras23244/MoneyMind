@@ -7,7 +7,7 @@ export default function ConnectedAccounts({ connectedBanks, formatCurrency, navi
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {connectedBanks.map((bank, idx) => (
-                <Card key={idx} onClick={() => navigate?.("/dash")} className="bg-card-dark border border-white/10">
+                <Card key={idx} onClick={() => navigate?.("/dashboard")} className="bg-card-dark border border-white/10">
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-3">

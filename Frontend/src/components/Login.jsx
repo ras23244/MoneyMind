@@ -1,16 +1,12 @@
-import React, { use } from 'react';
-import { useState } from 'react';
-import './Login.css';
-import PasswordStrengthBar from 'react-password-strength-bar';
-import * as Yup from 'yup';
-import { Form, Formik } from 'formik';
-import TextField from "@mui/material/TextField";
-import Divider from '@mui/material/Divider';
-import useGeneral from './hooks/useGeneral';
-import axios from 'axios';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import { useUser } from '../context/UserContext';
+import React, { useState } from "react";
+import PasswordStrengthBar from "react-password-strength-bar";
+import * as Yup from "yup";
+import { Form, Formik } from "formik";
+import useGeneral from "./hooks/useGeneral";
+import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { useUser } from "../context/UserContext";
 
 function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -18,206 +14,180 @@ function Login() {
   const { login } = useUser();
 
   const initialState = {
-    email: '',
-    password: '',
-  }
+    email: "",
+    password: "",
+  };
 
   const validationSchema = Yup.object().shape({
-    email: Yup.string().email('Invalid email').required('Required'),
-    password: Yup.string().min(6, 'Too Short!').required('Required'),
+    email: Yup.string().email("Invalid email").required("Required"),
+    password: Yup.string().min(6, "Too Short!").required("Required"),
   });
 
   const handleSubmit = async (values) => {
     try {
-      const res = await axios.post(`${import.meta.env.VITE_BASE_URL}users/login`, {
-        email: values.email,
-        password: values.password
-      }, {
-        withCredentials: true // Important: Send/receive cookies
-      });
+      const res = await axios.post(
+        `${import.meta.env.VITE_BASE_URL}users/login`,
+        {
+          email: values.email,
+          password: values.password,
+        },
+        { withCredentials: true }
+      );
 
       if (res.status === 200) {
-        console.log("Login successful:", res.data);
-        toast.success('Login successful!');
+        toast.success("Login successful!");
         login(res.data.user);
-        // Redirect based on bankAccounts
-        if (Array.isArray(res.data.user.bankAccounts) && res.data.user.bankAccounts.length > 0) {
+
+        if (
+          Array.isArray(res.data.user.bankAccounts) &&
+          res.data.user.bankAccounts.length > 0
+        ) {
           navigate("/dashboard");
         } else {
           navigate("/link-bank-account");
         }
       }
     } catch (err) {
-      console.error("Login error:", err);
-      console.error("Server response:", err.response?.data);
-      const errorMessage = err.response?.data?.message || 'Login failed!';
+      const errorMessage =
+        err.response?.data?.message || "Login failed!";
       toast.error(errorMessage);
     }
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:5000/auth/google';
+    window.location.href = "http://localhost:5000/auth/google";
   };
 
   return (
-    <div className="login-container">
+    <div className="relative min-h-screen flex items-center justify-center bg-[#050505] overflow-hidden">
       <ToastContainer />
-      <div className="login-left">
-        <div className="login-form-wrapper">
-          <div className="logo-container">
-            <div className="logo">
-              <span className="logo-icon">O</span>
-            </div>
-          </div>
 
-          <div className="form-header">
-            <h1>Get Started</h1>
-            <p>Welcome to Filianta - Let's create your account</p>
-          </div>
+      {/* Background Glow */}
+      <div className="absolute w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[140px] top-[-15%] left-[-10%] animate-pulse" />
+      <div className="absolute w-[500px] h-[500px] bg-green-400/10 rounded-full blur-[120px] bottom-[-20%] right-[-10%] animate-pulse" />
 
-          <Formik initialValues={initialState} validationSchema={validationSchema} onSubmit={handleSubmit}>
-            {({ values, handleChange, handleBlur, touched, errors }) => (
-              <Form className="login-form">
+      {/* Card */}
+      <div className="relative z-10 w-full max-w-md bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-10 shadow-2xl">
+        <div className="mb-8 text-center">
+          <h2 className="text-3xl font-bold text-white mb-2">
+            Welcome Back
+          </h2>
+          <p className="text-white/50 text-sm">
+            Login to continue your MoneyMind journey.
+          </p>
+        </div>
 
-                <div className="form-group">
-                  <label htmlFor="email">Email</label>
-                  <TextField
-                    type="email"
-                    id="email"
-                    name="email"
-                    label="Email"
-                    fullWidth
-                    variant="outlined"
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    value={values.email}
-                    error={touched.email && Boolean(errors.email)}
-                    helperText={touched.email && errors.email}
-                  />
-                </div>
+        <Formik
+          initialValues={initialState}
+          validationSchema={validationSchema}
+          onSubmit={handleSubmit}
+        >
+          {({ values, handleChange, handleBlur, touched, errors }) => (
+            <Form className="space-y-5">
 
-                <div className="form-group">
-                  <div className="password-header">
-                    <label htmlFor="password">Password</label>
-                    <button type="button" onClick={() => navigate('/forget-password')} className="forgot-link">
-                      Forgot?
-                    </button>
-                  </div>
-                  <div className="password-input-wrapper">
-                    <TextField
-                      type={showPassword ? "text" : "password"}
-                      id="password"
-                      name="password"
-                      label="Password"
-                      fullWidth
-                      variant="outlined"
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      value={values.password}
-                      error={touched.password && Boolean(errors.password)}
-                      helperText={touched.password && errors.password}
-                    />
+              {/* Email */}
+              <div>
+                <label className="block text-xs uppercase text-white/50 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="name@example.com"
+                  value={values.email}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg py-3 px-4 text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                />
+                {touched.email && errors.email && (
+                  <p className="text-red-400 text-xs mt-1">
+                    {errors.email}
+                  </p>
+                )}
+              </div>
 
-                    <button
-                      type="button"
-                      className="password-toggle"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? '👁️' : '👁️‍🗨️'}
-                    </button>
-                  </div>
-                  <PasswordStrengthBar className="pt-3" password={values.password} />
-                </div>
-
-                <button type="submit" className="signup-btn">
-                  Login
-                </button>
-
-                <Divider className='pt-2'>OR</Divider>
-                <button
-                  onClick={handleGoogleLogin}
-                  type="button"
-                  className="w-full flex items-center justify-center gap-3 px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-700 font-medium shadow-sm hover:bg-gray-50 transition"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    viewBox="0 0 533.5 544.3"
-                    xmlns="http://www.w3.org/2000/svg"
+              {/* Password */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-xs uppercase text-white/50">
+                    Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/forget-password")}
+                    className="text-xs text-emerald-400 hover:underline"
                   >
-                    <path
-                      d="M533.5 278.4c0-17.4-1.6-34-4.7-50.1H272v94.8h147.5c-6.4 34.7-25.8 64.1-55.1 83.8l89.1 69.1c52-47.9 82-118.6 82-197.6z"
-                      fill="#4285f4"
-                    />
-                    <path
-                      d="M272 544.3c74.7 0 137.3-24.7 183-67.3l-89.1-69.1c-24.7 16.6-56.4 26.4-93.9 26.4-72.3 0-133.7-48.8-155.4-114.3H25.3v71.6c45.5 90.1 138.9 152.7 246.7 152.7z"
-                      fill="#34a853"
-                    />
-                    <path
-                      d="M116.6 319.9c-10.4-30.4-10.4-63.3 0-93.7v-71.6H25.3C-8.4 221-8.4 323.3 25.3 410.9l91.3-71z"
-                      fill="#fbbc04"
-                    />
-                    <path
-                      d="M272 107.1c39.9 0 75.8 13.8 104.1 40.9l77.8-77.8C409.3 24.6 346.7 0 272 0 164.2 0 70.8 62.6 25.3 152.7l91.3 71.6c21.6-65.5 83.1-114.3 155.4-114.3z"
-                      fill="#ea4335"
-                    />
-                  </svg>
-                  Continue with Google
-                </button>
-
-
-                <div className="login-footer">
-                  <span>Don't have an account? </span>
-                  <button type="button" className="login-link" onClick={() => navigate('/signup')}>
-                    Sign up
+                    Forgot?
                   </button>
                 </div>
-              </Form>
-            )}
-          </Formik>
-        </div>
-      </div>
 
-      <div className="login-right">
-        <div className="hero-content">
-          <h2 className="hero-title">
-            Enter<br />
-            the Future<br />
-            of Payments,<br />
-            today
-          </h2>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    placeholder="••••••••"
+                    value={values.password}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg py-3 px-4 pr-12 text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
 
-          <div className="dashboard-preview">
-            <div className="dashboard-card">
-              <div className="card-header">
-                <div className="card-logo">
-                  <span className="card-logo-icon">O</span>
-                </div>
-              </div>
-
-              <div className="balance-section">
-                <div className="balance-amount">12,347.23 $</div>
-                <div className="balance-label">Combined balance</div>
-              </div>
-
-              <div className="card-details">
-                <div className="card-row">
-                  <div className="card-info">
-                    <div className="card-name">Primary Card</div>
-                    <div className="card-number">3495 •••• •••• 6917</div>
-                  </div>
-                  <div className="card-amount">2,546.64$</div>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40"
+                  >
+                    {showPassword ? "🙈" : "👁"}
+                  </button>
                 </div>
 
-                <div className="card-row">
-                  <div className="card-info">
-                    <div className="visa-logo">VISA</div>
-                  </div>
-                  <button className="view-all-btn">View All</button>
-                </div>
+                {touched.password && errors.password && (
+                  <p className="text-red-400 text-xs mt-1">
+                    {errors.password}
+                  </p>
+                )}
+
+                <PasswordStrengthBar
+                  className="mt-3"
+                  password={values.password}
+                />
               </div>
-            </div>
-          </div>
-        </div>
+
+              {/* Login Button */}
+              <button
+                type="submit"
+                className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-bold py-4 rounded-lg transition-all shadow-lg hover:shadow-emerald-500/40"
+              >
+                Login
+              </button>
+
+              {/* OR */}
+              <div className="text-center text-white/40 text-xs uppercase">
+                OR
+              </div>
+
+              {/* Google Login */}
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                className="w-full bg-white/10 border border-white/20 text-white py-3 rounded-lg hover:bg-white/20 transition flex items-center justify-center gap-3"
+              >
+                Continue with Google
+              </button>
+
+              {/* Footer */}
+              <div className="text-center text-sm text-white/60 mt-6">
+                Don't have an account?
+                <span
+                  onClick={() => navigate("/signup")}
+                  className="text-emerald-400 ml-1 cursor-pointer hover:underline"
+                >
+                  Sign up
+                </span>
+              </div>
+            </Form>
+          )}
+        </Formik>
       </div>
     </div>
   );
