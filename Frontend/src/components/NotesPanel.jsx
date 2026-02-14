@@ -86,7 +86,7 @@ export default function NotesPanel() {
             )}
 
             {/* Notes List */}
-            <div className="overflow-y-auto flex-1 pr-1">
+            <div className="overflow-y-auto flex-1 pr-1 custom-scroll">
                 {notes.length === 0 ? (
                     <p className="text-sm text-gray-400">No notes yet.</p>
                 ) : (

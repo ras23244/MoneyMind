@@ -18,7 +18,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-          <Route path="/link-bank-account" element={<LinkBankAccountPage />} />
+        <Route path="/link-bank-account" element={<LinkBankAccountPage />} />
         <Route path="/forget-password" element={<ForgetPassword />} />
         <Route path="/verify-otp" element={<VerifyOtp />} />
         <Route path="/update-password" element={<UpdatePassword />} />

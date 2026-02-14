@@ -1,9 +1,5 @@
 import React, { useState, useMemo, useCallback } from "react";
 import Sidebar from '../components/Sidebar';
-import BalanceCards from "../components/BalanceCards";
-import RecentTransactions from "../components/RecentTransactions";
-import BudgetStatus from "../components/BudgetStatus";
-import ConnectedAccounts from "../components/ConnectedAccounts";
 import GoalsPanel from "../components/GoalsPanel";
 import TransactionsPanel from "../components/TransactionsPanel";
 import { Button } from "@/components/ui/button";
@@ -16,8 +12,6 @@ import Analytics from "../components/Analytics";
 import Accounts from "../components/Accounts";
 import { useBudgets } from "../components/hooks/useBudgets";
 import { useTransactions } from "../components/hooks/useTransactions";
-import { BudgetProgressCircle } from "../components/Analytics";
-import NotesPanel from "../components/NotesPanel";
 import { useFinancialSummary } from "../components/hooks/useFinancialSummary";
 import { transactionTrendData, financialGoals, connectedBanks } from "@/data/financeData";
 import Dashboard from "../components/Dashboard";

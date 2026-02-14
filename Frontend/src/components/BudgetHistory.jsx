@@ -10,8 +10,7 @@ dayjs.extend(relativeTime);
 
 export default function BudgetHistory({ budgets, transactions }) {
     const scrollRef = useRef(null);
-    const [atTop, setAtTop] = useState(true);
-    const [atBottom, setAtBottom] = useState(false);
+   
 
     // Group budgets by month
     const groupedBudgets = budgets.reduce((acc, budget) => {
@@ -34,7 +33,7 @@ export default function BudgetHistory({ budgets, transactions }) {
             <CardContent>
                 <div
                     ref={scrollRef}
-                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[480px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-black/40"
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[480px] overflow-y-auto pr-2 custom-scroll"
                 >
                     {Object.entries(groupedBudgets).length === 0 ? (
                         <p className="text-white/60">No past budgets yet.</p>

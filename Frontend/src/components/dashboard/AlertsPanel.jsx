@@ -153,7 +153,7 @@ export default function AlertsPanel({ transactions = [], billsUi = [], budgetsUi
     if (!alerts.length) return <div className="text-slate-400">No alerts right now — your finances look stable.</div>;
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-3 custom-scroll ">
             {alerts.map((al) => (
                 <div key={al.id} className="flex items-start gap-3 p-3 rounded border border-white/6 bg-white/2">
                     <div className="text-2xl leading-none">{al.icon}</div>
