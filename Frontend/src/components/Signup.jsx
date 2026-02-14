@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import PasswordStrengthBar from "react-password-strength-bar";
 import * as Yup from "yup";
 import { Form, Formik } from "formik";
-import axios from "axios";
+import axiosInstance from "../lib/axiosInstance";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import useGeneral from "./hooks/useGeneral";
@@ -28,14 +28,13 @@ function Signup() {
             const [firstname, ...rest] = values.name.trim().split(" ");
             const lastname = rest.join(" ") || " ";
 
-            const res = await axios.post(
-                `${import.meta.env.VITE_BASE_URL}users/register`,
+            const res = await axiosInstance.post(
+                '/users/register',
                 {
                     fullname: { firstname, lastname },
                     email: values.email,
                     password: values.password,
-                },
-                { withCredentials: true }
+                }
             );
 
             if (res.status === 201) {
@@ -43,7 +42,7 @@ function Signup() {
                 navigate("/login");
             }
         } catch (err) {
-            toast.error("Registration failed!");
+            toast.error(err.response?.data?.message || "Registration failed!");
         }
     };
 

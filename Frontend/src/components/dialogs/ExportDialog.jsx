@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import axios from 'axios';
+import axiosInstance from '../../lib/axiosInstance';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
@@ -111,8 +111,6 @@ export default function ExportDialog({ open, setOpen }) {
     const [advancedOpen, setAdvancedOpen] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    const token = localStorage.getItem('token');
-
     const applyPreset = (p) => {
         const now = new Date();
         if (p === '7d') {
@@ -159,11 +157,9 @@ export default function ExportDialog({ open, setOpen }) {
     const handleExport = async () => {
         setLoading(true);
         try {
-            const url = `${import.meta.env.VITE_BASE_URL}transactions/export`;
-            const res = await axios.get(url, {
+            const res = await axiosInstance.get('/transactions/export', {
                 params: paramsFromState,
                 responseType: 'blob',
-                headers: { Authorization: `Bearer ${token}` },
             });
 
             const blob = new Blob([res.data], { type: 'text/csv' });
@@ -198,7 +194,7 @@ export default function ExportDialog({ open, setOpen }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                     <div className="space-y-3">
-                       
+
                         <div>
                             <label className="text-xs text-slate-300">Category</label>
                             <input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. Groceries" className="w-full p-2 rounded bg-white/5" />

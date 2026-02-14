@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import axiosInstance from "../lib/axiosInstance";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useUser } from "../context/UserContext";
@@ -66,10 +66,9 @@ export default function LinkBankAccountPage() {
         try {
             setLoading(true);
             console.log("Submitting form data:", formData);
-            const res = await axios.post(
-                `${import.meta.env.VITE_BASE_URL}account/link-bank-account`,
-                formData,
-                { withCredentials: true }
+            const res = await axiosInstance.post(
+                '/account/link-bank-account',
+                formData
             );
 
             toast.success("Bank account linked successfully");

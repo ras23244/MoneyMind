@@ -40,9 +40,6 @@ export const UserProvider = ({ children }) => {
         const s = io(baseURL, {
             withCredentials: true,
             transports: ["websocket"],
-            auth: {
-                token: localStorage.getItem("tempSocketToken") || undefined,
-            },
         });
 
         s.on("connect", () => {
@@ -164,7 +161,6 @@ export const UserProvider = ({ children }) => {
                 socket && socket.disconnect();
             } catch (e) { }
             setNotifications([]);
-            localStorage.removeItem("user");
         }
     };
 

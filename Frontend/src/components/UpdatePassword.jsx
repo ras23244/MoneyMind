@@ -1,20 +1,24 @@
 import React from 'react';
 import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import './Login.css';
 import PasswordStrengthBar from 'react-password-strength-bar';
 import * as Yup from 'yup';
 import { Form, Formik } from 'formik';
 import TextField from "@mui/material/TextField";
 import useGeneral from './hooks/useGeneral';
-import axios from 'axios';
+import axiosInstance from '../lib/axiosInstance';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 function UpdatePassword() {
     const [showPassword, setShowPassword] = useState(false);
     const { navigate } = useGeneral();
+    const location = useLocation();
+    const email = location.state?.email;
+
     const initialState = {
-        currentPassword:'',
+        currentPassword: '',
         password: '',
     }
 
@@ -24,13 +28,18 @@ function UpdatePassword() {
 
     const handleSubmit = async (values) => {
         try {
-            const email = localStorage.getItem("email");
-            const res = await axios.put(
-                `${import.meta.env.VITE_BASE_URL}users/update-password`,
+            if (!email) {
+                toast.error('Email not found. Please start password reset again.');
+                navigate('/forget-password');
+                return;
+            }
+
+            const res = await axiosInstance.put(
+                '/users/update-password',
                 {
                     email,
                     currentPassword: values.currentPassword,
-                    password: values.password, 
+                    password: values.password,
                 }
             );
 
@@ -93,7 +102,7 @@ function UpdatePassword() {
                                 <div className="form-group">
                                     <div className="password-header">
                                         <label htmlFor="password">New Password</label>
-                                    
+
                                     </div>
                                     <div className="password-input-wrapper">
                                         <TextField

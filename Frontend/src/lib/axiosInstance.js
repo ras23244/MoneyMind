@@ -52,7 +52,7 @@ axiosInstance.interceptors.response.use(
                 processQueue(err, null);
 
                 if (typeof window !== 'undefined') {
-                    localStorage.removeItem('user');
+                  
                     window.location.href = '/login';
                 }
 
@@ -61,7 +61,7 @@ axiosInstance.interceptors.response.use(
         }
         if (error.response?.status === 401 && !error.response?.data?.code === 'TOKEN_EXPIRED') {
             if (typeof window !== 'undefined') {
-                localStorage.removeItem('user');
+                
                 window.location.href = '/login';
             }
         }

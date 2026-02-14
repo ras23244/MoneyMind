@@ -3,7 +3,7 @@ import PasswordStrengthBar from "react-password-strength-bar";
 import * as Yup from "yup";
 import { Form, Formik } from "formik";
 import useGeneral from "./hooks/useGeneral";
-import axios from "axios";
+import axiosInstance from "../lib/axiosInstance";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useUser } from "../context/UserContext";
@@ -25,13 +25,12 @@ function Login() {
 
   const handleSubmit = async (values) => {
     try {
-      const res = await axios.post(
-        `${import.meta.env.VITE_BASE_URL}users/login`,
+      const res = await axiosInstance.post(
+        '/users/login',
         {
           email: values.email,
           password: values.password,
-        },
-        { withCredentials: true }
+        }
       );
 
       if (res.status === 200) {
