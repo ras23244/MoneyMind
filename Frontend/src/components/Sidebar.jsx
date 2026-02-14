@@ -1,11 +1,22 @@
 import React from "react";
 import { DollarSign } from "lucide-react";
 import { useUser } from '../context/UserContext';
+import { useNavigate, useLocation } from 'react-router-dom';
 
-export default function Sidebar({ navigation, activeTab, setActiveTab, creditScore }) {
-    const { user,logout } = useUser();
-    const handleLogout = ()=>{
-        logout();
+export default function Sidebar({ navigation, creditScore }) {
+    const { user, logout } = useUser();
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    const handleLogout = async () => {
+        await logout();
+        navigate('/login', { replace: true });
+    }
+
+    const isActive = (path) => {
+        if (!path) return false;
+        if (path === '/dashboard') return location.pathname === '/dashboard' || location.pathname === '/dashboard/';
+        return location.pathname.startsWith(path);
     }
 
     return (
@@ -23,11 +34,12 @@ export default function Sidebar({ navigation, activeTab, setActiveTab, creditSco
             <nav className="space-y-2">
                 {navigation.map((item) => {
                     const Icon = item.icon;
+                    const active = isActive(item.path);
                     return (
                         <button
                             key={item.id}
-                            onClick={() => setActiveTab(item.id)}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === item.id ? 'bg-white text-black' : 'text-white/70 hover:text-white hover:bg-white/5'}`}
+                            onClick={() => navigate(item.path)}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${active ? 'bg-white text-black' : 'text-white/70 hover:text-white hover:bg-white/5'}`}
                         >
                             <Icon className="w-5 h-5" />
                             <span className="font-medium">{item.label}</span>
@@ -38,9 +50,8 @@ export default function Sidebar({ navigation, activeTab, setActiveTab, creditSco
 
             <div className="p-4 bg-white/5 rounded-xl border border-white/10 mt-auto">
                 <div className="flex items-center gap-3 mb-3">
-                  
                     <img
-                        src={user?.image || "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTQdztTDcpZ2pFqwWDYwSXbvZq5nzJYg5cn8w&s"} // fallback if user.image is missing
+                        src={user?.image || "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTQdztTDcpZ2pFqwWDYwSXbvZq5nzJYg5cn8w&s"}
                         alt={`${user?.name?.firstname} ${user?.name?.lastname}`}
                         className="w-10 h-10 rounded-full object-cover border border-white/20"
                     />
@@ -50,8 +61,8 @@ export default function Sidebar({ navigation, activeTab, setActiveTab, creditSco
                             {user?.fullname?.firstname} {user?.fullname?.lastname}
                         </p>
                         <button
-                        onClick={handleLogout}
-                        className="text-white/70 hover:text-red-500 mt-2 cursor-pointer">Logout</button>
+                            onClick={handleLogout}
+                            className="text-white/70 hover:text-red-500 mt-2 cursor-pointer">Logout</button>
                     </div>
                 </div>
             </div>

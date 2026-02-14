@@ -1,18 +1,20 @@
 const express = require('express');
 const app = express();
+
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const dotenv = require('dotenv');
 dotenv.config();
+
 const connectToDb = require('./db/db');
 connectToDb();
-app.use(cookieParser());
-// Normalize frontend URL to avoid mismatched trailing slash in CORS
-const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+
 const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+
 const googleAuth = require('./middlewares/googleAuth');
-const googleStrategy = require('passport-google-oauth20').Strategy;
+
 const userRoutes = require('./routes/UserRoutes');
 const transactionRoutes = require('./routes/TransactionRoutes');
 const accountRoutes = require('./routes/AccountRoutes');
@@ -21,68 +23,63 @@ const goalRoutes = require('./routes/GoalRoutes');
 const noteRoutes = require('./routes/NoteRoutes');
 const billRoutes = require('./routes/BillRoutes');
 const notificationRoutes = require('./routes/NotificationRoutes');
-const expressMongoSanitize = require('@exortek/express-mongo-sanitize');
-const { generalLimiter } = require('./middlewares/rateLimiter');
+
+const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173')
+    .replace(/\/$/, '');
 
 app.use(cors({
     origin: frontendUrl,
-    credentials: true, // Allow credentials (cookies)
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    maxAge: 86400 // 24 hours
-}))
-app.use(session({
-    secret: process.env.SESSION_SECRET || 'your-secret-key',
-    resave: false,
-    saveUninitialized: true,
-    // cookie: {
-    //     secure: process.env.NODE_ENV === 'production',
-    //     httpOnly: true,
-    //     maxAge: 1000 * 60 * 60 * 24 // 1 day
-    // }
+    credentials: true,
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(expressMongoSanitize())
+app.use(cookieParser());
+
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'session_secret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 * 1000
+    }
+}));
 
 app.use(passport.initialize());
 app.use(passport.session());
-passport.use(new googleStrategy({
+
+passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: 'http://localhost:5000/auth/google/callback'
+    callbackURL: `${process.env.BACKEND_URL || 'http://localhost:5000'}/auth/google/callback`
 }, (accessToken, refreshToken, profile, done) => {
-
-    console.log("profile", profile)
-
+    console.log('✅ Google profile:', profile.id);
     return done(null, profile);
 }));
 
-passport.serializeUser((user, done) => {
-    done(null, user);
-});
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((user, done) => done(null, user));
 
-passport.deserializeUser((user, done) => {
-    done(null, user);
-});
 
-app.get('/auth/google', passport.authenticate('google', {
-    scope: ['profile', 'email'],
-    prompt: 'select_account'
-}));
-
-app.get('/auth/google/callback', passport.authenticate('google', {
-    failureRedirect: "http://localhost:5173/login",
-}),
-    googleAuth,
-    (req, res, next) => {
-        res.redirect("http://localhost:5173/");
-    }
+app.get('/auth/google',
+    passport.authenticate('google', {
+        scope: ['profile', 'email'],
+        prompt: 'select_account'
+    })
 );
 
-app.get('/', (req, res) => {
-    res.send('Hello World!');
-});
+app.get('/auth/google/callback',
+    passport.authenticate('google', {
+        failureRedirect: `${frontendUrl}/login?error=auth_failed`,
+        session: true
+    }),
+    googleAuth
+);
+
+
 
 app.use('/users', userRoutes);
 app.use('/transactions', transactionRoutes);
@@ -92,5 +89,9 @@ app.use('/goals', goalRoutes);
 app.use('/notes', noteRoutes);
 app.use('/bills', billRoutes);
 app.use('/notifications', notificationRoutes);
-module.exports = app;
 
+app.get('/', (req, res) => {
+    res.send('Server running');
+});
+
+module.exports = app;

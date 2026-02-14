@@ -1,8 +1,24 @@
 const User = require('../models/UserModel');
 const { generateTokens } = require('../utils/generateToken');
 
-const googleAuth = async (req, res, next) => {
-    const { email, given_name, family_name, picture } = req.user?._json;
+const googleAuth = async (req, res) => {
+    console.log(
+        '🔍 googleAuth middleware - req.user:',
+        req.user?.id,
+        req.user?.emails?.[0]?.value
+    );
+
+    if (!req.user) {
+        return res.status(401).json({
+            error: 'Authentication failed - no user data from Google'
+        });
+    }
+
+    const email = req.user.emails?.[0]?.value;
+    const given_name = req.user.name?.givenName;
+    const family_name = req.user.name?.familyName;
+    const picture = req.user.photos?.[0]?.value;
+
     try {
         let user = await User.findOne({ email });
 
@@ -17,32 +33,33 @@ const googleAuth = async (req, res, next) => {
             });
         }
 
-        const tokens = generateTokens(user._id);
+        const { accessToken, refreshToken } = generateTokens(user._id);
 
-        // Set secure HTTP-only cookies
         const isProduction = process.env.NODE_ENV === 'production';
-        res.cookie('accessToken', tokens.accessToken, {
+
+        res.cookie('accessToken', accessToken, {
             httpOnly: true,
             secure: isProduction,
-            sameSite: 'strict',
-            maxAge: 15 * 60 * 1000, // 15 minutes
-            path: '/',
+            sameSite: isProduction ? 'strict' : 'lax',
+            maxAge: 15 * 60 * 1000,
         });
 
-        res.cookie('refreshToken', tokens.refreshToken, {
+        res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
             secure: isProduction,
-            sameSite: 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-            path: '/',
+            sameSite: isProduction ? 'strict' : 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
-        req.user = user;
-        // Redirect to dashboard without token in query param (it's in cookie now)
-        res.redirect(`http://localhost:5173/dashboard`);
+        const frontendBase = (process.env.FRONTEND_URL || 'http://localhost:5173')
+            .replace(/\/$/, '');
+
+        return res.redirect(`${frontendBase}/dashboard`);
+
     } catch (error) {
-        console.error("Error in Google Auth Middleware:", error);
-        res.status(500).send("Internal Server Error");
+        console.error('❌ Google Auth Error:', error);
+        return res.status(500).send('Internal Server Error');
     }
-}
+};
+
 module.exports = googleAuth;
