@@ -54,7 +54,7 @@ function Login() {
   };
 
   const handleGoogleLogin = () => {
-    window.open(`${import.meta.env.VITE_BASE_URL}auth/google`, "_self");
+    window.open(`${import.meta.env.VITE_BASE_URL}/auth/google`, "_self");
   };
 
   return (
