@@ -54,7 +54,7 @@ function Login() {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:5000/auth/google";
+    window.open(`${import.meta.env.VITE_BASE_URL}auth/google`, "_self");
   };
 
   return (
