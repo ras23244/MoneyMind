@@ -1,68 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Line } from 'recharts';
-import axiosInstance from '../lib/axiosInstance';
+import useForecast from './hooks/useForecast';
 
 export default function ForecastChart({ months = 3, lookback = 6 }) {
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-
-  
-    useEffect(() => {
-        let cancelled = false;
-
-        const load = async () => {
-            setLoading(true);
-            try {
-                const res = await axiosInstance.get("/transactions/forecast", {
-                    params: { months, lookback },
-                });
-
-                if (cancelled) return;
-
-                const history = (res.data?.data?.history || []).map((h) => ({
-                    month: h.month,
-                    net: Math.round(h.net || 0),
-                }));
-
-                const forecast = (res.data?.data?.forecast || []).map((f) => ({
-                    month: f.month,
-                    forecast: Math.round(f.projectedNet || 0),
-                }));
-
-                // Combine history + forecast into timeline
-                const combined = [];
-                history.forEach((h) => combined.push({ month: h.month, net: h.net }));
-                forecast.forEach((f) => combined.push({ month: f.month, forecast: f.forecast }));
-
-                // Convert month to short label for UI
-                const display = combined.map((row) => {
-                    let label = row.month;
-                    try {
-                        label = new Date(row.month + "-01").toLocaleString(undefined, {
-                            month: "short",
-                        });
-                    } catch (e) { }
-
-                    return { ...row, monthLabel: label };
-                });
-
-                setData(display);
-            } catch (err) {
-                console.error("Forecast fetch error", err);
-                setError(err);
-            } finally {
-                if (!cancelled) setLoading(false);
-            }
-        };
-
-        load();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [months, lookback]);
+    const { data, loading, error } = useForecast({ months, lookback });
 
 
     return (

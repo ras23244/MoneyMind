@@ -30,7 +30,7 @@ const LandingPage = () => {
                 </nav>
 
                 {/* Main Hero Section */}
-                <main className="flex-grow flex items-center relative z-10 px-6 py-12 md:py-24 max-w-7xl mx-auto w-full">
+                <main className="flex-grow flex items-center relative z-10 px-6 py-4 md:py-4 max-w-7xl mx-auto w-full">
                     <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center w-full">
 
                         {/* Left Column: Hero Content */}

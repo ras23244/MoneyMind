@@ -2,7 +2,6 @@ const currency = (n) =>
     new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
 
 export default function TransactionList({ transactions, expanded, onToggleExpand, onNavigate }) {
-    console.log("transactions", transactions)
     const displayTransactions = expanded ? transactions : transactions;
 
     return (

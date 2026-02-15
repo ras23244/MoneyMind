@@ -20,7 +20,6 @@ io.use(socketAuth);
 
 io.on('connection', (socket) => {
     // keep minimal logging here
-    console.log('User socket connected', socket.id, 'user', socket.user && socket.user.id);
 });
 
 server.listen(PORT, () => {

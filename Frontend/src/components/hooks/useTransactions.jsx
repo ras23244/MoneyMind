@@ -20,6 +20,6 @@ export const useTransactions = (userId) => {
         refetchOnReconnect: false,
 
         onError: (err) =>
-            console.error("❌ [QUERY ERROR transactions]:", err),
+            undefined,
     });
 };

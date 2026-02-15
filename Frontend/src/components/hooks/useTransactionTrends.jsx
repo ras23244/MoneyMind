@@ -24,7 +24,7 @@ export const useTransactionTrends = (userId, params = { range: 30 }) => {
         refetchOnReconnect: false,
 
         onError: (err) =>
-            console.error("[QUERY ERROR trends]:", err),
+            undefined,
     });
 
     return { ...query, pagination };

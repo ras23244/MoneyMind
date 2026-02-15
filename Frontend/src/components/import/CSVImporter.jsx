@@ -104,14 +104,12 @@ export default function CSVImporter({ onComplete }) {
                         resolve();
                     },
                     onError: (err) => {
-                        console.error('Bulk import error', err);
                         toast.error('Bulk import failed. See console for details.');
                         resolve();
                     }
                 });
             });
         } catch (error) {
-            console.error('Import error:', error);
             toast.error('Import failed. Check console for details.');
         } finally {
             setLoading(false);

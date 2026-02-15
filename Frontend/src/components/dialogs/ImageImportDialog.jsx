@@ -49,7 +49,7 @@
 //         }
 //     }
 
-        
+
 
 //     return (
 //         <Dialog open={open} onOpenChange={setOpen}>
@@ -215,7 +215,6 @@ export default function ImageImportDialog({ open, setOpen }) {
 
             setAiresult(structured);
         } catch (error) {
-            console.error(error);
             alert("Failed to structure receipt.");
         } finally {
             setLoading(false);
@@ -249,7 +248,6 @@ export default function ImageImportDialog({ open, setOpen }) {
             setResult("");
             setFile(null);
         } catch (error) {
-            console.log(error);
             alert("Failed to save transactions.");
         } finally {
             setSaving(false);

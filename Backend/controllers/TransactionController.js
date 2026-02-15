@@ -64,10 +64,9 @@ exports.createTransaction = async (req, res) => {
             data: transaction,
         });
     } catch (error) {
-        console.error('Error creating transaction:', error);
         res.status(500).json({
             success: false,
-            error: error.message,
+            message: 'Internal Server Error',
         });
     }
 };
@@ -83,7 +82,7 @@ exports.getTransactions = async (req, res) => {
     } catch (error) {
         res.status(500).json({
             success: false,
-            error: error.message
+            message: 'Internal Server Error'
         });
     }
 };
@@ -104,7 +103,7 @@ exports.getTransactionById = async (req, res) => {
     } catch (error) {
         res.status(500).json({
             success: false,
-            error: error.message
+            message: 'Internal Server Error'
         });
     }
 };
@@ -112,10 +111,8 @@ exports.getTransactionById = async (req, res) => {
 exports.updateTransaction = async (req, res) => {
     try {
         const { description, amount, type, category, note, tags, date, bankAccountId } = req.body;
-        console.log('[updateTransaction] incoming:', { userId: req.user?.id, id: req.params.id, body: req.body });
 
         const originalTransaction = await Transaction.findOne({ userId: req.user.id, _id: req.params.id });
-        console.log('[updateTransaction] originalTransaction:', originalTransaction);
         if (!originalTransaction) {
             return res.status(404).json({
                 success: false,
@@ -177,7 +174,6 @@ exports.updateTransaction = async (req, res) => {
             updateFields,
             { new: true }
         );
-        console.log('[updateTransaction] after first update, transaction:', transaction);
 
         // Update account balance if amount or type changed, or if account changed
         const newType = type || originalTransaction.type;
@@ -235,7 +231,6 @@ exports.updateTransaction = async (req, res) => {
             updateFields,
             { new: true }
         );
-        console.log('[updateTransaction] updatedTransaction:', updatedTransaction);
 
         res.status(200).json({
             success: true,
@@ -244,7 +239,7 @@ exports.updateTransaction = async (req, res) => {
     } catch (error) {
         res.status(500).json({
             success: false,
-            error: error.message
+            message: 'Internal Server Error'
         });
     }
 };
@@ -276,7 +271,7 @@ exports.deleteTransaction = async (req, res) => {
     } catch (error) {
         res.status(500).json({
             success: false,
-            error: error.message
+            message: 'Internal Server Error'
         });
     }
 };
@@ -302,7 +297,7 @@ exports.filterTransactions = async (req, res) => {
     } catch (error) {
         res.status(500).json({
             success: false,
-            error: error.message
+            message: 'Internal Server Error'
         });
     }
 };
@@ -366,14 +361,12 @@ exports.exportTransactions = async (req, res) => {
         res.setHeader('Content-Disposition', 'attachment; filename="transactions.csv"');
         res.status(200).send(csv);
     } catch (error) {
-        console.error('Error exporting transactions:', error);
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 };
 
 exports.getTransactionTrends = async (req, res) => {
     try {
-        console.log("Fetching......")
         const userId = req.user.id;
         const { startDate, endDate, granularity = 'day', page = 1, limit = 100, range } = req.query;
 
@@ -480,7 +473,6 @@ exports.getTransactionTrends = async (req, res) => {
 
         res.json({ success: true, data, pagination: { total: metadata.total || 0, page: pageNum, limit: limitNum, pages: Math.ceil((metadata.total || 0) / limitNum) } });
     } catch (error) {
-        console.error('Error in getTransactionTrends:', error);
         res.status(500).json({ message: 'Error fetching trends' });
     }
 };
@@ -533,7 +525,7 @@ exports.getCategoryBreakdown = async (req, res) => {
 
         res.status(200).json({ success: true, data: categories });
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 };
 
@@ -591,8 +583,7 @@ exports.getCategoryAggregation = async (req, res) => {
 
         res.status(200).json({ success: true, data: { overall, monthwise } });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, error: err.message });
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 };
 
@@ -640,7 +631,7 @@ exports.getSpendingHeatmap = async (req, res) => {
 
         res.status(200).json({ success: true, data: heatmapData });
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 };
 
@@ -696,7 +687,7 @@ exports.getTrendData = async (req, res) => {
 
         res.status(200).json({ success: true, data: trends });
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 };
 
@@ -753,12 +744,10 @@ exports.getForecast = async (req, res) => {
             const monthKey = dayjs().add(i, 'month').format('YYYY-MM');
             forecast.push({ month: monthKey, projectedNet: avgNet });
         }
-        console.log("Forecast data:", { monthlyData, forecast });
 
         res.status(200).json({ success: true, data: { history: monthlyData, forecast } });
     } catch (err) {
-        console.error('getForecast error', err);
-        res.status(500).json({ success: false, error: err.message });
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 };
 
@@ -813,8 +802,7 @@ exports.getFinancialSummary = async (req, res) => {
 
         return res.status(200).json({ success: true, data: summary });
     } catch (err) {
-        console.error(err);
-        return res.status(500).json({ success: false, message: "Server error" });
+        return res.status(500).json({ success: false, message: "Internal Server Error" });
     }
 };
 
@@ -827,7 +815,7 @@ exports.getAccountTransactions = async (req, res) => {
         const transactions = await Transaction.find({ userId, accountId });
         res.status(200).json({ success: true, data: transactions });
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 }
 
@@ -848,7 +836,6 @@ exports.bulkCreateTransactions = async (req, res) => {
             } else {
                 date = new Date();
             }
-            console.log("bank account",t.bankAccountId|| t.accountId)
 
             return {
                 userId: req.user.id,
@@ -875,13 +862,11 @@ exports.bulkCreateTransactions = async (req, res) => {
                 success: true,
                 inserted: insertedCount,
                 attempted: docs.length,
-                message: 'Partial success',
-                error: bulkErr.message,
+                message: 'Partial success'
             });
         }
     } catch (error) {
-        console.error('bulkCreateTransactions error', error);
-        return res.status(500).json({ success: false, error: error.message });
+        return res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 }
 
@@ -932,11 +917,9 @@ exports.structureReceipt = async (req, res) => {
 
         const responseText = result.response.text();
         const parsedData = JSON.parse(responseText);
-        console.log("Gemini response:", parsedData);
 
         res.status(200).json(parsedData.transactions);
     } catch (error) {
-        console.error("Gemini Error:", error);
-        res.status(500).json({ error: "AI Parsing failed", details: error.message });
+        res.status(500).json({ error: "AI Parsing failed", details: "Internal Server Error" });
     }
 };

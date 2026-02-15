@@ -6,9 +6,8 @@ module.exports = {
     io = new Server(server, opts);
     io.on('connection', (socket) => {
       try {
-        console.log('Socket connected:', socket.id);
+        // Socket connected
       } catch (e) {
-        consolre.error('Socket connection error', e.message);
         /* ignore */
       }
     });

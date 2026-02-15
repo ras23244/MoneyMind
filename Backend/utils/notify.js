@@ -29,7 +29,7 @@ async function notify(opts = {}) {
       await Notification.findByIdAndUpdate(doc._id, { $addToSet: { delivered: 'in-app' } });
     }
   } catch (e) {
-    console.error('Error emitting notification', e.message);
+    // Silently ignore notification emission errors
   }
 
   return doc;

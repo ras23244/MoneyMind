@@ -65,7 +65,6 @@ export default function LinkBankAccountPage() {
 
         try {
             setLoading(true);
-            console.log("Submitting form data:", formData);
             const res = await axiosInstance.post(
                 '/account/link-bank-account',
                 formData

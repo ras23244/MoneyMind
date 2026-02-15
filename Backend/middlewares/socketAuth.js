@@ -13,7 +13,6 @@ module.exports = async (socket, next) => {
     socket.join(`user:${user._id.toString()}`);
     return next();
   } catch (err) {
-    console.error('Socket auth error', err.message);
     return next(new Error('Authentication error'));
   }
 };

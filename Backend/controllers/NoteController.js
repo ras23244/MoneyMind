@@ -10,7 +10,6 @@ exports.createNote = async (req, res) => {
         await newNote.save();
         res.status(201).json(newNote);
     } catch (error) {
-        console.error("Error creating note:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 };
@@ -21,7 +20,6 @@ exports.getNotes = async (req, res) => {
         const notes = await Note.find({ userId });
         res.status(200).json(notes);
     } catch (error) {
-        console.error("Error fetching notes:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 };
@@ -36,7 +34,6 @@ exports.getNoteById = async (req, res) => {
         }
         res.status(200).json(note);
     } catch (error) {
-        console.error("Error fetching note:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 };
@@ -54,7 +51,6 @@ exports.updateNote = async (req, res) => {
         await note.save();
         res.status(200).json(note);
     } catch (error) {
-        console.error("Error updating note:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 };
@@ -68,7 +64,6 @@ exports.deleteNote = async (req, res) => {
         }
         res.status(200).json({ message: "Note deleted successfully" });
     } catch (error) {
-        console.error("Error deleting note:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 };

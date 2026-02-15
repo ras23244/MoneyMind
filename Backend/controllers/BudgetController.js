@@ -100,8 +100,7 @@ exports.getBudgets = async (req, res) => {
 
         res.json({ success: true, data: budgetsWithSpent });
     } catch (err) {
-        console.error("Error fetching budgets:", err);
-        res.status(500).json({ success: false, error: err.message });
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 };
 
@@ -133,7 +132,7 @@ exports.createBudget = async (req, res) => {
         });
         res.status(201).json({ success: true, data: budget });
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 };
 
@@ -148,7 +147,7 @@ exports.updateBudget = async (req, res) => {
             { category, amount, spent, month, duration, durationType, day: durationType === "day" ? day : undefined },
             { new: true }
         );
-       
+
 
         if (!budget) {
             return res.status(404).json({ success: false, error: "Budget not found" });
@@ -165,8 +164,7 @@ exports.updateBudget = async (req, res) => {
         return res.json({ success: true, data: budget });
 
     } catch (err) {
-        console.error("Error updating budget:", err);
-        res.status(500).json({ success: false, error: err.message });
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 };
 
@@ -175,6 +173,6 @@ exports.deleteBudget = async (req, res) => {
         await Budget.findOneAndDelete({ userId: req.user.id, _id: req.params.id });
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 };

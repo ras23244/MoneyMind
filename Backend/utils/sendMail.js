@@ -1,11 +1,11 @@
-const nodemailer= require('nodemailer')
+const nodemailer = require('nodemailer')
 
-const sendEmail = async (data)=>{
+const sendEmail = async (data) => {
     try {
         const transport = nodemailer.createTransport({
             service: 'gmail',
             auth: {
-                user:'rashmi.dubey1010@gmail.com',
+                user: 'rashmi.dubey1010@gmail.com',
                 pass: process.env.APP_PASSWORD
             }
         });
@@ -17,12 +17,12 @@ const sendEmail = async (data)=>{
             text: stringOTP
         }
         const result = await transport.sendMail(mailOptions)
-        
+
 
         return result;
 
     } catch (error) {
-        console.log(error)
+        return false;
     }
 }
 

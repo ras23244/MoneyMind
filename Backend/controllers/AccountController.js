@@ -5,7 +5,6 @@ const notify = require('../utils/notify');
 
 exports.linkBankAccount = async (req, res) => {
     const { bankName, accountNumber } = req.body;
-    console.log('Received link bank account request:', { bankName, accountNumber, user: req.user?.email });
     if (!req.user || !bankName || !accountNumber) {
         return res.status(400).json({ message: 'Bank name and account number are required' });
     }
@@ -33,7 +32,6 @@ exports.linkBankAccount = async (req, res) => {
             accountType: 'checking',
             balance: 0,
         });
-        console.log('Saving new account:', newAccount);
         await newAccount.save();
 
         const updatedUser = await UserModel.findByIdAndUpdate(
@@ -57,7 +55,7 @@ exports.linkBankAccount = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error linking bank account:', error);
+
         res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -105,8 +103,7 @@ exports.unlinkAccount = async (req, res) => {
         res.status(200).json({ message: "Account unlinked successfully" });
 
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
+        res.status(500).json({ message: "Internal Server Error" });
     }
 }
 
@@ -116,7 +113,6 @@ exports.getAccounts = async (req, res) => {
         const accounts = await AccountModel.find({ userId });
         res.status(200).json(accounts);
     } catch (error) {
-        console.error('Error fetching accounts:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -147,7 +143,6 @@ exports.updateAccount = async (req, res) => {
             account,
         });
     } catch (error) {
-        console.error('Error updating account:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 }
@@ -171,14 +166,12 @@ exports.deleteAccount = async (req, res) => {
             return res.status(404).json({ message: 'Account not found' });
         }
 
-        console.log(`Account ${id} deleted and removed from user ${userId}`);
 
         res.status(200).json({
             message: 'Account deleted successfully',
             user: updatedUser
         });
     } catch (error) {
-        console.error('Error deleting account:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 }
@@ -235,7 +228,6 @@ exports.getAccountStats = async (req, res) => {
 
         res.status(200).json(stats);
     } catch (error) {
-        console.error('Error fetching account stats:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 }

@@ -63,7 +63,7 @@ exports.createBill = async (req, res) => {
                     ? Object.values(error.errors)
                         .map(err => err.message)
                         .join(', ')
-                    : 'An error occurred while creating the bill'
+                    : 'Internal Server Error'
         });
     }
 };
@@ -99,7 +99,7 @@ exports.getUpcomingBills = async (req, res) => {
     } catch (error) {
         res.status(500).json({
             success: false,
-            error: error.message
+            message: 'Internal Server Error'
         });
     }
 };
@@ -162,7 +162,7 @@ exports.updateBillStatus = async (req, res) => {
     } catch (error) {
         res.status(500).json({
             success: false,
-            error: error.message
+            message: 'Internal Server Error'
         });
     }
 };
@@ -226,7 +226,7 @@ exports.getBillSummary = async (req, res) => {
     } catch (error) {
         res.status(500).json({
             success: false,
-            error: error.message
+            message: 'Internal Server Error'
         });
     }
 };
@@ -250,10 +250,9 @@ exports.deleteBill = async (req, res) => {
             data: bill
         });
     } catch (error) {
-        console.error('Error deleting bill:', error);
         res.status(500).json({
             success: false,
-            error: error.message
+            message: 'Internal Server Error'
         });
     }
 };

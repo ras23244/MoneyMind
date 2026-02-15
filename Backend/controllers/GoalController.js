@@ -11,8 +11,7 @@ exports.getGoals = async (req, res) => {
         res.status(200).json({ success: true, data: goals });
 
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
-        console.error(err);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 }
 
@@ -50,11 +49,10 @@ exports.createGoal = async (req, res) => {
         });
 
         await newGoal.save();
-       
+
         res.status(201).json({ success: true, data: newGoal });
     } catch (err) {
-        console.log(err);
-        res.status(500).json({ success: false, error: err.message });
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
 
     }
 }
@@ -64,7 +62,7 @@ exports.updateGoal = async (req, res) => {
     try {
         const { id } = req.params;
         const updates = req.body;
-       
+
         const goal = await Goal.findOneAndUpdate(
             { _id: id, userId: req.user.id },
             updates,
@@ -72,12 +70,11 @@ exports.updateGoal = async (req, res) => {
         );
         if (!goal) {
             return res.status(404).json({ success: false, error: "Goal not found" });
-        } 
-    
+        }
+
         res.status(200).json({ success: true, data: goal });
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
-        console.error(err);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 };
 
@@ -90,11 +87,10 @@ exports.deleteGoal = async (req, res) => {
         if (!goal) {
             return res.status(404).json({ success: false, error: "Goal not found" });
         }
-       
+
 
         res.status(200).json({ success: true, message: "Goal deleted successfully" });
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
-        console.error(err);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 };

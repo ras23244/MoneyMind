@@ -19,10 +19,8 @@ export const UserProvider = ({ children }) => {
         const fetchUser = async () => {
             try {
                 const res = await axiosInstance.get("/users/me");
-                console.log("Fetched user:", res.data);
                 setUser(res.data);
             } catch (err) {
-                console.error("Failed to fetch user:", err);
                 setUser(null);
             } finally {
                 setLoading(false);
@@ -43,7 +41,7 @@ export const UserProvider = ({ children }) => {
         });
 
         s.on("connect", () => {
-            console.log("Socket connected:", s.id);
+            // Socket connected
         });
 
         s.on("notification", (n) => {
@@ -91,7 +89,7 @@ export const UserProvider = ({ children }) => {
 
                 setNotifications(list);
             } catch (e) {
-                console.error("Failed to fetch notifications:", e.message);
+                // Silently ignore fetch errors
             }
         };
 
@@ -104,7 +102,6 @@ export const UserProvider = ({ children }) => {
             setNotifications((prev) => prev.filter((n) => n.id !== id));
             return true;
         } catch (e) {
-            console.error("markNotificationRead error:", e.message);
             return false;
         }
     };
@@ -115,7 +112,6 @@ export const UserProvider = ({ children }) => {
             setNotifications([]);
             return true;
         } catch (e) {
-            console.error("markAllRead error:", e.message);
             return false;
         }
     };
@@ -126,15 +122,12 @@ export const UserProvider = ({ children }) => {
             setNotifications((prev) => prev.filter((n) => n.id !== id));
             return true;
         } catch (e) {
-            console.error("deleteNotification error:", e.message);
             return false;
         }
     };
 
     const login = (userData) => {
-        console.log("Logging in user:", userData);
         setUser(userData);
-        console.log(user)
     };
 
     const patchUser = (partialData) => {
@@ -154,7 +147,7 @@ export const UserProvider = ({ children }) => {
         try {
             await axiosInstance.post("/users/logout");
         } catch (e) {
-            console.error("Logout request failed:", e);
+            // Ignore logout errors
         } finally {
             setUser(null);
             try {

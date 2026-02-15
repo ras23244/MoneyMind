@@ -21,7 +21,6 @@ export const useBulkAddTransactions = (userId) => {
         },
 
         onError: (err) => {
-            console.error("[useBulkAddTransactions] ❌ Mutation error:", err);
         },
     });
 };

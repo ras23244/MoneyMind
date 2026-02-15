@@ -24,7 +24,6 @@ export const useAddTransaction = (userId) => {
         },
 
         onError: (err) => {
-            console.error("[useAddTransaction] ❌ Mutation error:", err);
         },
     });
 };

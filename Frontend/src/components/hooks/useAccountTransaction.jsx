@@ -20,7 +20,7 @@ export const useAccountTransactions = (accountId) => {
         keepPreviousData: true,
         placeholderData: (prev) => prev,
         onError: (err) =>
-            console.error("❌ [QUERY ERROR accountTransactions]:", err),
+            undefined,
     });
 };
 

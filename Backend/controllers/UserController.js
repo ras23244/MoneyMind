@@ -52,7 +52,7 @@ exports.register = async (req, res) => {
             }
         });
     } catch (err) {
-        res.status(500).json({ message: 'Server error', error: err.message });
+        res.status(500).json({ message: 'Internal Server Error' });
     }
 };
 
@@ -65,7 +65,6 @@ exports.login = async (req, res) => {
         if (!user) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
-        console.log('User found during login:', user);
 
         const isMatch = await user.comparePassword(password);
         if (!isMatch) {
@@ -77,7 +76,7 @@ exports.login = async (req, res) => {
 
         res.status(200).json({
             message: 'Login successful',
-            tokens : tokens,
+            tokens: tokens,
             user: {
                 _id: user._id,
                 fullname: user.fullname,
@@ -87,7 +86,7 @@ exports.login = async (req, res) => {
         });
 
     } catch (err) {
-        res.status(500).json({ message: 'Server error', error: err.message });
+        res.status(500).json({ message: 'Internal Server Error' });
     }
 };
 
@@ -181,8 +180,7 @@ exports.forgetPassword = async (req, res) => {
 
         res.status(200).json({ message: 'OTP sent successfully' });
     } catch (error) {
-        console.log(error)
-        res.status(500).json({ message: 'Server error', error: error.message });
+        res.status(500).json({ message: 'Internal Server Error' });
     }
 }
 
@@ -251,7 +249,6 @@ exports.updatePassword = async (req, res) => {
         res.status(200).json({ message: "Password updated successfully" });
 
     } catch (error) {
-        console.error("Update password error:", error);
-        res.status(500).json({ message: "Server error", error: error.message });
+        res.status(500).json({ message: "Internal Server Error" });
     }
 };

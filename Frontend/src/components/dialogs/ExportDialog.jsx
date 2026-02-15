@@ -173,7 +173,6 @@ export default function ExportDialog({ open, setOpen }) {
             window.URL.revokeObjectURL(downloadUrl);
             setOpen(false);
         } catch (err) {
-            console.error('Export error', err);
             alert('Failed to export transactions');
         } finally {
             setLoading(false);

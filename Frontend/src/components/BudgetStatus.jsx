@@ -10,7 +10,6 @@ export default function BudgetStatus({ initialCategories }) {
 
     // Reset cards and dragged state
     const resetCards = () => {
-        console.log("RESTACK")
         setCards(initialCategories);
         setDragged(Array(initialCategories.length).fill(false));
     };
@@ -23,7 +22,6 @@ export default function BudgetStatus({ initialCategories }) {
                 next[index] = true;
                 // If all cards have been dragged, reset after a short delay
                 if (next.every(Boolean)) {
-                    console.log("All cards dragged");
                     setTimeout(resetCards, 100);
                 }
                 return next;

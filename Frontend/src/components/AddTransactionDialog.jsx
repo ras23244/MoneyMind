@@ -98,7 +98,6 @@ export default function AddTransactionDialog({ open, setOpen, userId, transactio
                         toast.error("Failed to update transaction. Please try again.", {
                             autoClose: 5000
                         });
-                        console.error("Error updating transaction:", error.response?.data || error.message);
                     },
                     onSettled: () => setLoading(false),
                 }
@@ -118,7 +117,6 @@ export default function AddTransactionDialog({ open, setOpen, userId, transactio
                         toast.error("Failed to add transaction. Please try again.", {
                             autoClose: 5000
                         });
-                        console.error("Error creating transaction:", error.response?.data || error.message);
                     },
                     onSettled: () => setLoading(false),
                 }

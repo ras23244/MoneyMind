@@ -2,12 +2,6 @@ const User = require('../models/UserModel');
 const { generateTokens } = require('../utils/generateToken');
 
 const googleAuth = async (req, res) => {
-    console.log(
-        '🔍 googleAuth middleware - req.user:',
-        req.user?.id,
-        req.user?.emails?.[0]?.value
-    );
-
     if (!req.user) {
         return res.status(401).json({
             error: 'Authentication failed - no user data from Google'
@@ -57,7 +51,6 @@ const googleAuth = async (req, res) => {
         return res.redirect(`${frontendBase}/dashboard`);
 
     } catch (error) {
-        console.error('❌ Google Auth Error:', error);
         return res.status(500).send('Internal Server Error');
     }
 };
