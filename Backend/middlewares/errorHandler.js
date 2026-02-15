@@ -23,7 +23,7 @@ module.exports = (err, req, res, next) => {
 
     // Don't expose internal error details in production
     const responseMessage = process.env.NODE_ENV === 'production' && status === 500
-        ? 'Internal Server Error'
+        ? message
         : message;
 
     res.status(status).json({
