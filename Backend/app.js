@@ -82,6 +82,8 @@ app.get('/auth/google/callback',
     googleAuth
 );
 
+console.log("NODE_ENV =", process.env.NODE_ENV);
+console.log("FRONTEND_URL =", process.env.FRONTEND_URL);
 
 
 app.use('/users', userRoutes);
