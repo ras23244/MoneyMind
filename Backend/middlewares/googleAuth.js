@@ -33,17 +33,18 @@ const googleAuth = async (req, res) => {
 
        res.cookie('accessToken', accessToken, {
   httpOnly: true,
-  secure: true,        
-  sameSite: 'none',   
+  secure: isProduction,
+  sameSite: isProduction ? 'none' : 'lax',
   maxAge: 15 * 60 * 1000,
 });
 
 res.cookie('refreshToken', refreshToken, {
   httpOnly: true,
-  secure: true,
-  sameSite: 'none',
+  secure: isProduction,
+  sameSite: isProduction ? 'none' : 'lax',
   maxAge: 7 * 24 * 60 * 60 * 1000,
 });
+
 
         const frontendBase = (process.env.FRONTEND_URL || 'http://localhost:5173')
             .replace(/\/$/, '');
