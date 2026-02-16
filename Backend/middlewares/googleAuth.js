@@ -29,27 +29,12 @@ const googleAuth = async (req, res) => {
 
         const { accessToken, refreshToken } = generateTokens(user._id);
 
-        const isProduction = process.env.NODE_ENV === 'production';
-
-       res.cookie('accessToken', accessToken, {
-  httpOnly: true,
-  secure: isProduction,
-  sameSite: isProduction ? 'none' : 'lax',
-  maxAge: 15 * 60 * 1000,
-});
-
-res.cookie('refreshToken', refreshToken, {
-  httpOnly: true,
-  secure: isProduction,
-  sameSite: isProduction ? 'none' : 'lax',
-  maxAge: 7 * 24 * 60 * 60 * 1000,
-});
-
-
         const frontendBase = (process.env.FRONTEND_URL || 'http://localhost:5173')
             .replace(/\/$/, '');
 
-        return res.redirect(`${frontendBase}/dashboard`);
+        // Send tokens via URL fragment for frontend to capture (avoids cross-site cookie issues)
+        const fragment = `accessToken=${encodeURIComponent(accessToken)}&refreshToken=${encodeURIComponent(refreshToken)}`;
+        return res.redirect(`${frontendBase}/oauth-success#${fragment}`);
 
     } catch (error) {
         return res.status(500).send('Internal Server Error');

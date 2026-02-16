@@ -1,4 +1,3 @@
-const express = require('express');
 const User = require('../models/UserModel');
 const { generateTokens } = require('../utils/generateToken');
 const sendMail = require('../utils/sendMail');
@@ -6,30 +5,10 @@ const bcrypt = require('bcrypt');
 const Account = require('../models/AccountModel');
 const jwt = require('jsonwebtoken');
 
-const setAuthCookies = (res, tokens) => {
-    const isProduction = process.env.NODE_ENV === 'production';
-
-    res.cookie('accessToken', tokens.accessToken, {
-        httpOnly: true,
-        secure: isProduction, // Only HTTPS in production
-        sameSite: 'lax', // CSRF protection
-        maxAge: 15 * 60 * 1000, // 15 minutes
-        path: '/',
-    });
-
-    res.cookie('refreshToken', tokens.refreshToken, {
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        path: '/',
-    });
-};
-
 exports.register = async (req, res) => {
     try {
         const { fullname, email, password } = req.body;
-        const { firstname, lastname } = fullname;
+        const { firstname, lastname } = fullname || {};
         const userExists = await User.findOne({ email });
 
         if (userExists) return res.status(400).json({ message: 'User already exists' });
@@ -41,10 +20,10 @@ exports.register = async (req, res) => {
         });
 
         const tokens = generateTokens(user._id);
-        setAuthCookies(res, tokens);
 
         res.status(201).json({
             message: 'User registered successfully',
+            tokens,
             user: {
                 _id: user._id,
                 name: `${user.fullname.firstname} ${user.fullname.lastname}`,
@@ -72,11 +51,10 @@ exports.login = async (req, res) => {
         }
 
         const tokens = generateTokens(user._id);
-        setAuthCookies(res, tokens);
 
         res.status(200).json({
             message: 'Login successful',
-            tokens: tokens,
+            tokens,
             user: {
                 _id: user._id,
                 fullname: user.fullname,
@@ -91,14 +69,13 @@ exports.login = async (req, res) => {
 };
 
 exports.logout = (req, res) => {
-    res.clearCookie('accessToken', { path: '/', httpOnly: true, secure: process.env.NODE_ENV === 'production' });
-    res.clearCookie('refreshToken', { path: '/', httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+    // Stateless: client clears tokens
     res.status(200).json({ message: 'Logged out successfully' });
 };
 
 exports.refreshAccessToken = async (req, res) => {
     try {
-        const refreshToken = req.cookies.refreshToken;
+        const refreshToken = req.headers['x-refresh-token'] || req.body?.refreshToken;
 
         if (!refreshToken) {
             return res.status(401).json({ message: 'No refresh token provided' });
@@ -112,37 +89,20 @@ exports.refreshAccessToken = async (req, res) => {
         }
 
         const tokens = generateTokens(user._id);
-        setAuthCookies(res, tokens);
 
-        res.status(200).json({ message: 'Token refreshed successfully' });
+        res.status(200).json({ message: 'Token refreshed successfully', tokens });
     } catch (err) {
-        res.clearCookie('accessToken', { path: '/', httpOnly: true });
-        res.clearCookie('refreshToken', { path: '/', httpOnly: true });
         return res.status(401).json({ message: 'Invalid refresh token' });
     }
 };
 
-
 exports.getMe = async (req, res) => {
-
-    let user = await User.findById(req.user.id).select('-password');
-
-    if (user.bankAccounts && user.bankAccounts.length > 0) {
-        const rawBankAccounts = user.bankAccounts.map(b => (b && b._id) ? b._id.toString() : b.toString());
-        const existingAccounts = await Account.find({ _id: { $in: rawBankAccounts }, userId: user._id }).select('_id');
-        const existingIds = existingAccounts.map(a => a._id.toString());
-        const uniqueAccountIds = [...new Set(existingIds)];
-
-        if (uniqueAccountIds.length !== rawBankAccounts.length) {
-            await User.findByIdAndUpdate(user._id, { bankAccounts: uniqueAccountIds }).exec();
-
-            user = await User.findById(req.user.id).select('-password').populate({ path: 'bankAccounts', select: 'accountNumber bankName balance' });
-            return res.status(200).json(user);
-        }
+    try {
+        const user = await User.findById(req.user.id).select('-password').populate({ path: 'bankAccounts', select: 'accountNumber bankName balance' });
+        res.status(200).json(user);
+    } catch (err) {
+        res.status(500).json({ message: 'Internal Server Error' });
     }
-
-    await user.populate({ path: 'bankAccounts', select: 'accountNumber bankName balance' });
-    res.status(200).json(user);
 };
 
 exports.forgetPassword = async (req, res) => {
@@ -229,7 +189,6 @@ exports.updatePassword = async (req, res) => {
             return res.status(400).json({ message: "All fields are required" });
         }
 
-
         const user = await User.findOne({ email });
         if (!user) {
             return res.status(404).json({ message: "User not found" });
@@ -239,7 +198,6 @@ exports.updatePassword = async (req, res) => {
         if (!isMatch) {
             return res.status(401).json({ message: "Current password is incorrect" });
         }
-
 
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 

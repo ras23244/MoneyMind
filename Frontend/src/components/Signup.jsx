@@ -39,7 +39,16 @@ function Signup() {
 
             if (res.status === 201) {
                 toast.success("Registration successful!");
-                navigate("/login");
+                try {
+                    if (res.data?.tokens?.accessToken) localStorage.setItem('accessToken', res.data.tokens.accessToken);
+                    if (res.data?.tokens?.refreshToken) localStorage.setItem('refreshToken', res.data.tokens.refreshToken);
+                } catch (e) { }
+
+                if (res.data?.tokens) {
+                    navigate('/dashboard');
+                } else {
+                    navigate('/login');
+                }
             }
         } catch (err) {
             toast.error(err.response?.data?.message || "Registration failed!");

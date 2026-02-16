@@ -12,7 +12,7 @@ const io = socketUtil.init(server, {
     cors: {
         origin: process.env.FRONTEND_URL || 'http://localhost:5173',
         methods: ['GET', 'POST'],
-        credentials: true,
+        credentials: false,
     }
 });
 

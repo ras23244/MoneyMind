@@ -36,7 +36,7 @@ export const UserProvider = ({ children }) => {
         const baseURL = (import.meta.env.VITE_BASE_URL || "").replace(/\/$/, "");
 
         const s = io(baseURL, {
-            withCredentials: true,
+            auth: { token: typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null },
             transports: ["websocket"],
         });
 
@@ -150,6 +150,7 @@ export const UserProvider = ({ children }) => {
             // Ignore logout errors
         } finally {
             setUser(null);
+            try { localStorage.removeItem('accessToken'); localStorage.removeItem('refreshToken'); } catch (e) { }
             try {
                 socket && socket.disconnect();
             } catch (e) { }

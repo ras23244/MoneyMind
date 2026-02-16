@@ -35,6 +35,11 @@ function Login() {
 
       if (res.status === 200) {
         toast.success("Login successful!");
+        try {
+          if (res.data?.tokens?.accessToken) localStorage.setItem('accessToken', res.data.tokens.accessToken);
+          if (res.data?.tokens?.refreshToken) localStorage.setItem('refreshToken', res.data.tokens.refreshToken);
+        } catch (e) { }
+
         login(res.data.user);
 
         if (
